@@ -1,0 +1,10 @@
+{
+  "id": "20250717000001_add_query_result_tags",
+  "name": "add_query_result_tags",
+  "up": [
+    "ALTER TABLE query_result ADD COLUMN tags TEXT"
+  ],
+  "down": [
+    "ALTER TABLE query_result DROP COLUMN tags"
+  ]
+}

@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block title %}Easy RAG System - Document Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2>Document Details</h2>
+                <div>
+                    <a href="{{ url_for('document.index') }}" class="btn btn-secondary">Back to Documents</a>
+                    <form action="{{ url_for('document.delete', id=document.id) }}" method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('정말로 문서 \"{{ document.name }}\"을(를) 삭제하시겠습니까?{% if vector_dbs %}\n\n경고: 이 문서는 {{ vector_dbs|length }}개의 벡터 데이터베이스에서 사용 중입니다. 삭제하면 해당 데이터베이스에 영향을 줄 수 있습니다.{% endif %}')">Delete</button>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Document Information</h4>
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Name</th>
+                                    <td>{{ document.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Type</th>
+                                    <td>{{ document.type }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Size</th>
+                                    <td>{{ document.size | filesizeformat }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Last Modified</th>
+                                    <td>{{ document.last_modified.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Created At</th>
+                                    <td>{{ document.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Path</th>
+                                    <td><code>{{ document.path }}</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Metadata</h4>
+                        {% if document_dict %}
+                            <div class="metadata-container">
+                                <pre class="bg-light p-3 rounded"><code>{{ document_dict.doc_metadata | tojson(indent=2) }}</code></pre>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">No metadata available for this document.</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h4>Document Preview</h4>
+                            {% if validation_status %}
+                                {% if validation_status.is_valid %}
+                                    <span class="badge bg-success">Valid Document</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Invalid Document</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        
+                        {% if validation_status and not validation_status.is_valid %}
+                            <div class="alert alert-danger mb-3">
+                                <strong>Validation Error:</strong> {{ validation_status.message }}
+                            </div>
+                        {% endif %}
+                        
+                        {% if preview_info is defined and preview_info and preview_info.get('total_length') %}
+                            <div class="alert alert-info mb-3 alert-permanent" >
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <strong>Total Length:</strong> {{ preview_info.get('total_length') }} characters
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Lines:</strong> {{ preview_info.get('lines', 0) }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Words:</strong> {{ preview_info.get('words', 0) }}
+                                    </div>
+                                </div>
+                                
+                                {% if preview_info.get('structure') %}
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <strong>Structure:</strong> {{ preview_info.get('structure') }}
+                                            {% if preview_info.get('structure') == 'object' and preview_info.get('keys') %}
+                                                <div class="mt-1">
+                                                    <strong>Keys:</strong> {{ preview_info.get('keys', [])|join(', ') }}
+                                                </div>
+                                            {% elif preview_info.get('structure') == 'array' and preview_info.get('items') %}
+                                                <div class="mt-1">
+                                                    <strong>Items:</strong> {{ preview_info.get('items', 0) }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if preview_info.get('headers') %}
+                                    <hr>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <strong>CSV Headers:</strong> {{ preview_info.get('headers', [])|join(', ') }}
+                                            {% if preview_info.get('sample_rows') %}
+                                                <div class="mt-1">
+                                                    <strong>Rows:</strong> {{ preview_info.get('sample_rows', 0) }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="document-preview p-3 border rounded bg-light">
+                            {% if preview_content %}
+                                <pre>{{ preview_content }}</pre>
+                            {% elif preview_error %}
+                                <div class="alert alert-warning">{{ preview_error }}</div>
+                            {% else %}
+                                <div class="alert alert-info">Preview not available for this document type.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <h4>Vector Databases Using This Document</h4>
+                        {% if vector_dbs %}
+                            <ul class="list-group">
+                                {% for db in vector_dbs %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <a href="{{ url_for('vector_db.view', id=db.id) }}">{{ db.name }}</a>
+                                            <span class="badge bg-primary rounded-pill ms-2">{{ db.vector_store_type }}</span>
+                                        </div>
+                                        <small class="text-muted">Created: {{ db.created_at.strftime('%Y-%m-%d') }}</small>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <div class="alert alert-info alert-permanent">This document is not used in any vector databases yet.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    .document-preview {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .metadata-container {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 문서 삭제 후 리다이렉트 함수
+    function deleteDocumentAndRedirect(documentId, documentName, buttonElement) {
+        let confirmMessage = `정말로 문서 "${documentName}"을(를) 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`;
+        
+        {% if vector_dbs %}
+        confirmMessage += '\n\n경고: 이 문서는 {{ vector_dbs|length }}개의 벡터 데이터베이스에서 사용 중입니다. 삭제하면 해당 데이터베이스에 영향을 줄 수 있습니다.';
+        {% endif %}
+        
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+        
+        // 버튼 비활성화 및 로딩 표시
+        const deleteBtn = buttonElement || event.target;
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 삭제 중...';
+        
+        fetch(`/documents/${documentId}/delete?ajax=1`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // 성공 시 문서 목록으로 리다이렉트
+                alert(data.message);
+                window.location.href = '/documents';
+            } else {
+                alert('오류: ' + data.error);
+                
+                // 버튼 복원
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = 'Delete';
+            }
+        })
+        .catch(error => {
+            console.error('삭제 오류:', error);
+            alert('문서 삭제 중 오류가 발생했습니다.');
+            
+            // 버튼 복원
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = 'Delete';
+        });
+    }
+</script>
+{% endblock %}

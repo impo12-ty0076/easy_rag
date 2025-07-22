@@ -1,0 +1,156 @@
+2025-07-18 11:08:21,394 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:08:22,587 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:08:23,375 ERROR: Unhandled Exception: Object of type MetaData is not JSON serializable
+Traceback (most recent call last):
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "D:\kiro_test\easy_rag\routes\document.py", line 384, in view
+    return render_template(
+        'document/view.html',
+    ...<5 lines>...
+        validation_status=validation_status
+    )
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "D:\kiro_test\easy_rag\templates\document\view.html", line 1, in top-level template code
+    {% extends 'base.html' %}
+  File "D:\kiro_test\easy_rag\templates\base.html", line 58, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^
+  File "D:\kiro_test\easy_rag\templates\document\view.html", line 53, in block 'content'
+    <pre class="bg-light p-3 rounded"><code>{{ document.metadata | tojson(indent=2) }}</code></pre>
+    
+  File "D:\kiro_test\easy_rag\__init__.py", line 99, in tojson_filter
+    return json.dumps(obj, indent=indent)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\json\__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ~~~~~~^^^^^
+  File "C:\Python313\Lib\json\encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+  File "C:\Python313\Lib\json\encoder.py", line 261, in iterencode
+    return _iterencode(o, 0)
+  File "C:\Python313\Lib\json\encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+                    f'is not JSON serializable')
+TypeError: Object of type MetaData is not JSON serializable
+ [in D:\kiro_test\easy_rag\errors.py:161]
+2025-07-18 11:08:30,654 ERROR: Unhandled Exception: Object of type MetaData is not JSON serializable
+Traceback (most recent call last):
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "D:\kiro_test\easy_rag\routes\document.py", line 384, in view
+    return render_template(
+        'document/view.html',
+    ...<5 lines>...
+        validation_status=validation_status
+    )
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "D:\kiro_test\easy_rag\templates\document\view.html", line 1, in top-level template code
+    {% extends 'base.html' %}
+  File "D:\kiro_test\easy_rag\templates\base.html", line 58, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^
+  File "D:\kiro_test\easy_rag\templates\document\view.html", line 53, in block 'content'
+    <pre class="bg-light p-3 rounded"><code>{{ document.metadata | tojson(indent=2) }}</code></pre>
+    
+  File "D:\kiro_test\easy_rag\__init__.py", line 99, in tojson_filter
+    return json.dumps(obj, indent=indent)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\json\__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ~~~~~~^^^^^
+  File "C:\Python313\Lib\json\encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+  File "C:\Python313\Lib\json\encoder.py", line 261, in iterencode
+    return _iterencode(o, 0)
+  File "C:\Python313\Lib\json\encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+                    f'is not JSON serializable')
+TypeError: Object of type MetaData is not JSON serializable
+ [in D:\kiro_test\easy_rag\errors.py:161]
+2025-07-18 11:08:37,979 ERROR: Unhandled Exception: Object of type MetaData is not JSON serializable
+Traceback (most recent call last):
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "D:\kiro_test\easy_rag\routes\document.py", line 384, in view
+    return render_template(
+        'document/view.html',
+    ...<5 lines>...
+        validation_status=validation_status
+    )
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "D:\kiro_test\easy_rag\templates\document\view.html", line 1, in top-level template code
+    {% extends 'base.html' %}
+  File "D:\kiro_test\easy_rag\templates\base.html", line 58, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^
+  File "D:\kiro_test\easy_rag\templates\document\view.html", line 53, in block 'content'
+    <pre class="bg-light p-3 rounded"><code>{{ document.metadata | tojson(indent=2) }}</code></pre>
+    
+  File "D:\kiro_test\easy_rag\__init__.py", line 99, in tojson_filter
+    return json.dumps(obj, indent=indent)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\json\__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ~~~~~~^^^^^
+  File "C:\Python313\Lib\json\encoder.py", line 200, in encode
+    chunks = self.iterencode(o, _one_shot=True)
+  File "C:\Python313\Lib\json\encoder.py", line 261, in iterencode
+    return _iterencode(o, 0)
+  File "C:\Python313\Lib\json\encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+                    f'is not JSON serializable')
+TypeError: Object of type MetaData is not JSON serializable
+ [in D:\kiro_test\easy_rag\errors.py:161]
+2025-07-18 11:15:54,396 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:17:49,366 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:20:46,666 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:22:14,032 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:26:49,997 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:26:51,246 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 13:19:58,880 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 13:19:59,908 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 13:26:53,537 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 13:29:50,169 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 13:30:14,823 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 13:30:25,308 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 13:30:49,044 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 13:31:12,755 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 13:36:53,290 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 13:50:47,694 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 13:57:05,954 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 13:57:06,776 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 14:03:11,307 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]

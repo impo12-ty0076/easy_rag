@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Bad Request{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h2>Bad Request</h2>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <img src="{{ url_for('static', filename='img/400.svg') }}" alt="400 Error" style="max-width: 300px;">
+                </div>
+                <p class="lead text-center">The request could not be understood by the server due to malformed syntax.</p>
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary">Return to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

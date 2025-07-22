@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+
+{% block title %}Dependency Management{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Dependency Management</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Core Dependencies</h2>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Package</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="core-dependencies-table">
+                        {% for package, installed in core_dependencies.items() %}
+                        <tr>
+                            <td>{{ package }}</td>
+                            <td>
+                                {% if installed %}
+                                <span class="badge bg-success">Installed</span>
+                                {% else %}
+                                <span class="badge bg-danger">Missing</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-3">
+                <button id="install-core-btn" class="btn btn-primary">
+                    Install Core Dependencies
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Feature Dependencies</h2>
+        </div>
+        <div class="card-body">
+            <div class="accordion" id="featureAccordion">
+                {% for category, features in feature_categories.items() %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading-{{ category }}">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                data-bs-target="#collapse-{{ category }}" aria-expanded="false" 
+                                aria-controls="collapse-{{ category }}">
+                            {{ category|replace('_', ' ')|title }}
+                        </button>
+                    </h2>
+                    <div id="collapse-{{ category }}" class="accordion-collapse collapse" 
+                         aria-labelledby="heading-{{ category }}" data-bs-parent="#featureAccordion">
+                        <div class="accordion-body">
+                            <div class="list-group">
+                                {% for feature in features %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-1">{{ feature|replace('_', ' ')|title }}</h5>
+                                        <button class="btn btn-sm btn-outline-primary check-feature-btn" 
+                                                data-feature="{{ category }}/{{ feature }}">
+                                            Check Dependencies
+                                        </button>
+                                    </div>
+                                    <div class="feature-dependencies-container" id="deps-{{ category }}-{{ feature }}">
+                                        <!-- Dependencies will be loaded here -->
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Generate Requirements File</h2>
+        </div>
+        <div class="card-body">
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" id="requirements-path" 
+                       value="requirements.txt" placeholder="Path for requirements.txt">
+                <button class="btn btn-outline-secondary" type="button" id="generate-requirements-btn">
+                    Generate
+                </button>
+            </div>
+            <div id="requirements-result"></div>
+        </div>
+    </div>
+    
+    <!-- Installation Progress Modal -->
+    <div class="modal fade" id="installationProgressModal" tabindex="-1" aria-labelledby="installationProgressModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="installationProgressModalLabel">Installing Dependencies</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="installation-progress-container">
+                        <p id="installation-status">Starting installation...</p>
+                        <div class="progress mb-3">
+                            <div id="installation-progress-bar" class="progress-bar" role="progressbar" 
+                                 style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                        <p id="current-package"></p>
+                        <div id="installation-errors" class="alert alert-danger d-none"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check feature dependencies
+        document.querySelectorAll('.check-feature-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const feature = this.getAttribute('data-feature');
+                const containerId = 'deps-' + feature.replace('/', '-');
+                const container = document.getElementById(containerId);
+                
+                // Show loading
+                container.innerHTML = '<div class="text-center my-3"><div class="spinner-border spinner-border-sm" role="status"></div> Loading...</div>';
+                
+                // Fetch dependencies
+                fetch(`/dependencies/check/feature/${feature}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            container.innerHTML = `<div class="alert alert-danger mt-2">${data.error}</div>`;
+                            return;
+                        }
+                        
+                        // Create table
+                        let html = `
+                            <div class="table-responsive mt-2">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Package</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                        `;
+                        
+                        for (const [package, installed] of Object.entries(data.dependencies)) {
+                            html += `
+                                <tr>
+                                    <td>${package}</td>
+                                    <td>
+                                        ${installed 
+                                            ? '<span class="badge bg-success">Installed</span>' 
+                                            : '<span class="badge bg-danger">Missing</span>'}
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                        
+                        html += `
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                        
+                        // Add install button if not all dependencies are installed
+                        if (!data.all_installed) {
+                            html += `
+                                <button class="btn btn-sm btn-primary install-feature-btn mt-2" 
+                                        data-feature="${feature}">
+                                    Install Dependencies
+                                </button>
+                            `;
+                        }
+                        
+                        container.innerHTML = html;
+                        
+                        // Add event listener to install button
+                        const installBtn = container.querySelector('.install-feature-btn');
+                        if (installBtn) {
+                            installBtn.addEventListener('click', function() {
+                                installFeatureDependencies(feature);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        container.innerHTML = `<div class="alert alert-danger mt-2">Error: ${error.message}</div>`;
+                    });
+            });
+        });
+        
+        // Install core dependencies
+        document.getElementById('install-core-btn').addEventListener('click', function() {
+            installCoreDependencies();
+        });
+        
+        // Generate requirements file
+        document.getElementById('generate-requirements-btn').addEventListener('click', function() {
+            const path = document.getElementById('requirements-path').value;
+            const resultContainer = document.getElementById('requirements-result');
+            
+            resultContainer.innerHTML = '<div class="text-center my-3"><div class="spinner-border spinner-border-sm" role="status"></div> Generating...</div>';
+            
+            fetch('/dependencies/generate-requirements', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ output_path: path })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        resultContainer.innerHTML = `<div class="alert alert-success">Requirements file generated at ${data.path}</div>`;
+                    } else {
+                        resultContainer.innerHTML = `<div class="alert alert-danger">Error: ${data.message}</div>`;
+                    }
+                })
+                .catch(error => {
+                    resultContainer.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+                });
+        });
+        
+        // Function to install core dependencies
+        function installCoreDependencies() {
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('installationProgressModal'));
+            modal.show();
+            
+            // Reset progress
+            document.getElementById('installation-progress-bar').style.width = '0%';
+            document.getElementById('installation-progress-bar').textContent = '0%';
+            document.getElementById('installation-status').textContent = 'Starting installation...';
+            document.getElementById('current-package').textContent = '';
+            document.getElementById('installation-errors').classList.add('d-none');
+            document.getElementById('installation-errors').textContent = '';
+            
+            // Start installation
+            fetch('/dependencies/install/core', {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'installation_started') {
+                        // Start polling for progress
+                        pollInstallationProgress();
+                    } else {
+                        document.getElementById('installation-status').textContent = 'Error starting installation';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('installation-status').textContent = `Error: ${error.message}`;
+                });
+        }
+        
+        // Function to install feature dependencies
+        function installFeatureDependencies(feature) {
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('installationProgressModal'));
+            modal.show();
+            
+            // Reset progress
+            document.getElementById('installation-progress-bar').style.width = '0%';
+            document.getElementById('installation-progress-bar').textContent = '0%';
+            document.getElementById('installation-status').textContent = `Starting installation for ${feature}...`;
+            document.getElementById('current-package').textContent = '';
+            document.getElementById('installation-errors').classList.add('d-none');
+            document.getElementById('installation-errors').textContent = '';
+            
+            // Start installation
+            fetch(`/dependencies/install/feature/${feature}`, {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'installation_started') {
+                        // Start polling for progress
+                        pollInstallationProgress();
+                    } else {
+                        document.getElementById('installation-status').textContent = 'Error starting installation';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('installation-status').textContent = `Error: ${error.message}`;
+                });
+        }
+        
+        // Function to poll installation progress
+        function pollInstallationProgress() {
+            const progressInterval = setInterval(() => {
+                fetch('/dependencies/progress')
+                    .then(response => response.json())
+                    .then(data => {
+                        // If no active installation
+                        if (!data || Object.keys(data).length === 0) {
+                            document.getElementById('installation-status').textContent = 'No active installation';
+                            clearInterval(progressInterval);
+                            return;
+                        }
+                        
+                        // Update progress
+                        const progress = Math.round((data.completed / data.total) * 100);
+                        document.getElementById('installation-progress-bar').style.width = `${progress}%`;
+                        document.getElementById('installation-progress-bar').textContent = `${progress}%`;
+                        
+                        // Update status
+                        if (data.status === 'complete') {
+                            document.getElementById('installation-status').textContent = 'Installation complete';
+                            document.getElementById('current-package').textContent = '';
+                            clearInterval(progressInterval);
+                            
+                            // Refresh core dependencies table if needed
+                            if (!data.feature) {
+                                setTimeout(() => {
+                                    location.reload();
+                                }, 2000);
+                            }
+                            
+                            // Show errors if any
+                            if (data.errors && data.errors.length > 0) {
+                                const errorsContainer = document.getElementById('installation-errors');
+                                errorsContainer.classList.remove('d-none');
+                                errorsContainer.innerHTML = '<strong>Errors:</strong><ul>' + 
+                                    data.errors.map(err => `<li>${err}</li>`).join('') + 
+                                    '</ul>';
+                            }
+                        } else {
+                            document.getElementById('installation-status').textContent = 'Installing dependencies...';
+                            document.getElementById('current-package').textContent = `Current package: ${data.current_package}`;
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById('installation-status').textContent = `Error: ${error.message}`;
+                        clearInterval(progressInterval);
+                    });
+            }, 1000);
+        }
+    });
+</script>
+{% endblock %}

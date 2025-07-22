@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Error</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <circle fill="#DC3545" cx="100" cy="100" r="90"></circle>
+        <path d="M100,20 C55.8172,20 20,55.8172 20,100 C20,144.183 55.8172,180 100,180 C144.183,180 180,144.183 180,100 C180,55.8172 144.183,20 100,20 Z M100,170 C61.3401,170 30,138.66 30,100 C30,61.3401 61.3401,30 100,30 C138.66,30 170,61.3401 170,100 C170,138.66 138.66,170 100,170 Z" fill="#FFFFFF" fill-rule="nonzero"></path>
+        <path d="M130,70 L70,130" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"></path>
+        <path d="M70,70 L130,130" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"></path>
+    </g>
+</svg>

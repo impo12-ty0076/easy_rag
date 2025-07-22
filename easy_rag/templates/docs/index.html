@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block title %}Documentation - Easy RAG System{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+<style>
+    .docs-sidebar {
+        position: sticky;
+        top: 2rem;
+        height: calc(100vh - 4rem);
+        overflow-y: auto;
+    }
+    .docs-content {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    .docs-toc {
+        position: sticky;
+        top: 2rem;
+        max-height: calc(100vh - 4rem);
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3">
+        <div class="docs-sidebar">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Documentation</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('docs.index') }}" class="list-group-item list-group-item-action {% if active_page == 'index' %}active{% endif %}">
+                        <i class="bi bi-house-door me-2"></i> Home
+                    </a>
+                    <a href="{{ url_for('docs.document', filename='setup_guide') }}" class="list-group-item list-group-item-action {% if active_page == 'setup_guide' %}active{% endif %}">
+                        <i class="bi bi-gear me-2"></i> Setup Guide
+                    </a>
+                    <a href="{{ url_for('docs.document', filename='usage_tutorials') }}" class="list-group-item list-group-item-action {% if active_page == 'usage_tutorials' %}active{% endif %}">
+                        <i class="bi bi-book me-2"></i> Usage Tutorials
+                    </a>
+                    <a href="{{ url_for('docs.document', filename='troubleshooting') }}" class="list-group-item list-group-item-action {% if active_page == 'troubleshooting' %}active{% endif %}">
+                        <i class="bi bi-wrench me-2"></i> Troubleshooting
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Resources</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('help.index') }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-question-circle me-2"></i> Interactive Help
+                    </a>
+                    <a href="https://github.com/example/easy-rag-system" class="list-group-item list-group-item-action">
+                        <i class="bi bi-github me-2"></i> GitHub Repository
+                    </a>
+                    <a href="mailto:support@example.com" class="list-group-item list-group-item-action">
+                        <i class="bi bi-envelope me-2"></i> Contact Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-body docs-content">
+                <h1>Easy RAG System Documentation</h1>
+                
+                <p class="lead">
+                    Welcome to the Easy RAG System documentation. Here you'll find comprehensive guides and documentation to help you get started with Easy RAG System.
+                </p>
+                
+                <div class="row mt-5">
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-gear" style="font-size: 3rem; color: #0d6efd;"></i>
+                                <h3 class="mt-3">Setup Guide</h3>
+                                <p>Learn how to install and configure the Easy RAG System on your computer.</p>
+                                <a href="{{ url_for('docs.document', filename='setup_guide') }}" class="btn btn-primary">Read Guide</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-book" style="font-size: 3rem; color: #0d6efd;"></i>
+                                <h3 class="mt-3">Usage Tutorials</h3>
+                                <p>Step-by-step tutorials for using the key features of the Easy RAG System.</p>
+                                <a href="{{ url_for('docs.document', filename='usage_tutorials') }}" class="btn btn-primary">Read Tutorials</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-wrench" style="font-size: 3rem; color: #0d6efd;"></i>
+                                <h3 class="mt-3">Troubleshooting</h3>
+                                <p>Solutions to common issues you might encounter while using the system.</p>
+                                <a href="{{ url_for('docs.document', filename='troubleshooting') }}" class="btn btn-primary">Read Solutions</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h2 class="mt-5">What is Easy RAG System?</h2>
+                
+                <p>
+                    Easy RAG System is a user-friendly application designed to enable non-developers to create and use 
+                    Retrieval-Augmented Generation (RAG) systems. The application provides a simple interface for managing 
+                    documents, creating vector databases, configuring retrieval strategies, and interacting with various 
+                    language models.
+                </p>
+                
+                <p>
+                    With Easy RAG System, you can:
+                </p>
+                
+                <ul>
+                    <li>Upload and manage documents in various formats</li>
+                    <li>Convert documents into vector databases for semantic search</li>
+                    <li>Configure different retrieval strategies</li>
+                    <li>Query your documents using various language models</li>
+                    <li>Get AI-generated answers based on your document collection</li>
+                </ul>
+                
+                <h2 class="mt-4">Key Concepts</h2>
+                
+                <div class="accordion mt-3" id="conceptsAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                Retrieval-Augmented Generation (RAG)
+                            </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#conceptsAccordion">
+                            <div class="accordion-body">
+                                RAG is an approach that enhances large language models by providing them with relevant information 
+                                retrieved from a knowledge base. This allows the models to generate more accurate and contextually 
+                                relevant responses based on specific documents.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingTwo">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                Vector Databases
+                            </button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#conceptsAccordion">
+                            <div class="accordion-body">
+                                Vector databases store document chunks as numerical representations (embeddings) that capture their 
+                                semantic meaning. This enables semantic search, where documents are retrieved based on their meaning 
+                                rather than just keyword matching.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingThree">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                Embedding Models
+                            </button>
+                        </h2>
+                        <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#conceptsAccordion">
+                            <div class="accordion-body">
+                                Embedding models convert text into numerical vectors that represent the semantic meaning of the text. 
+                                These vectors are used to find similar content in the vector database.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingFour">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
+                                Retrievers
+                            </button>
+                        </h2>
+                        <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#conceptsAccordion">
+                            <div class="accordion-body">
+                                Retrievers are components that fetch relevant document chunks from the vector database based on a query. 
+                                Different retriever types use different strategies to find the most relevant information.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingFive">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive">
+                                Language Models (LLMs)
+                            </button>
+                        </h2>
+                        <div id="collapseFive" class="accordion-collapse collapse" data-bs-parent="#conceptsAccordion">
+                            <div class="accordion-body">
+                                Language models generate human-like text based on the input they receive. In a RAG system, LLMs use 
+                                the retrieved document chunks as context to generate answers to user queries.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h2 class="mt-5">Getting Started</h2>
+                
+                <p>
+                    To get started with Easy RAG System, follow these steps:
+                </p>
+                
+                <ol>
+                    <li>Follow the <a href="{{ url_for('docs.document', filename='setup_guide') }}">Setup Guide</a> to install and configure the system</li>
+                    <li>Upload your documents using the document management interface</li>
+                    <li>Create a vector database from your documents</li>
+                    <li>Configure a retriever for your vector database</li>
+                    <li>Start querying your documents</li>
+                </ol>
+                
+                <p>
+                    For detailed instructions, refer to the <a href="{{ url_for('docs.document', filename='usage_tutorials') }}">Usage Tutorials</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize syntax highlighting
+        document.querySelectorAll('pre code').forEach((block) => {
+            hljs.highlightBlock(block);
+        });
+    });
+</script>
+{% endblock %}

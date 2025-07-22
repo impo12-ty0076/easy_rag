@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Retriever Configuration{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .retriever-icon {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+        vertical-align: middle;
+    }
+    .db-card {
+        transition: all 0.2s ease;
+        height: 100%;
+    }
+    .db-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .retriever-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+    .retriever-type-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        margin-right: 1rem;
+    }
+    .retriever-type-icon i {
+        font-size: 1.2rem;
+        color: #0d6efd;
+    }
+    .feature-card {
+        border-radius: 0.5rem;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        height: 100%;
+    }
+    .feature-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>Retriever Configuration</h1>
+            <p class="lead">Configure how documents are retrieved from your vector databases.</p>
+        </div>
+        <div>
+            <a href="{{ url_for('vector_db.index') }}" class="btn btn-outline-primary">
+                <i class="fas fa-database me-2"></i> Manage Vector Databases
+            </a>
+        </div>
+    </div>
+
+    {% if vector_dbs %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+        {% for db in vector_dbs %}
+        {% set has_config = db.id in (configs|default({})) %}
+        <div class="col">
+            <div class="card db-card h-100">
+                {% if has_config %}
+                <div class="retriever-badge">
+                    <span class="badge bg-success">Configured</span>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ db.name }}</h5>
+                    <div class="card-text">
+                        <div class="d-flex mb-3">
+                            <div class="retriever-type-icon">
+                                <i class="fas fa-database"></i>
+                            </div>
+                            <div>
+                                <div><strong>{{ db.vector_store_type }}</strong></div>
+                                <div class="text-muted small">Vector Store</div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex mb-3">
+                            <div class="retriever-type-icon">
+                                <i class="fas fa-microchip"></i>
+                            </div>
+                            <div>
+                                <div><strong>{{ db.embedding_model }}</strong></div>
+                                <div class="text-muted small">Embedding Model</div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex mb-3">
+                            <div class="retriever-type-icon">
+                                <i class="fas fa-puzzle-piece"></i>
+                            </div>
+                            <div>
+                                <div><strong>{{ db.chunk_count }}</strong></div>
+                                <div class="text-muted small">Chunks</div>
+                            </div>
+                        </div>
+                        
+                        {% if has_config %}
+                        <div class="d-flex mb-3">
+                            <div class="retriever-type-icon">
+                                <i class="fas fa-{{ configs[db.id].icon }}"></i>
+                            </div>
+                            <div>
+                                <div><strong>{{ configs[db.id].name }}</strong></div>
+                                <div class="text-muted small">Current Retriever</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top-0">
+                    <a href="{{ url_for('retriever.configure', db_id=db.id) }}" class="btn btn-primary w-100">
+                        {% if has_config %}
+                        <i class="fas fa-edit me-2"></i> Edit Retriever Configuration
+                        {% else %}
+                        <i class="fas fa-plus me-2"></i> Configure Retriever
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <h4 class="alert-heading"><i class="fas fa-info-circle me-2"></i> No Vector Databases Found</h4>
+        <p>You need to create a vector database before configuring a retriever. Vector databases store your document embeddings and enable semantic search.</p>
+        <hr>
+        <a href="{{ url_for('vector_db.index') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i> Create Vector Database
+        </a>
+    </div>
+    {% endif %}
+
+    <h2 class="mb-4">About Retrievers</h2>
+    
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        <div class="col">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h5 class="card-title">Similarity Search</h5>
+                    <p class="card-text">Basic vector similarity search that finds documents closest to the query in the embedding space.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-shuffle"></i>
+                    </div>
+                    <h5 class="card-title">Maximal Marginal Relevance</h5>
+                    <p class="card-text">Balances relevance with diversity to avoid returning too many similar documents.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-compress"></i>
+                    </div>
+                    <h5 class="card-title">Contextual Compression</h5>
+                    <p class="card-text">Compresses retrieved documents to focus on the most relevant parts of the content.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-filter"></i>
+                    </div>
+                    <h5 class="card-title">Self Query</h5>
+                    <p class="card-text">Automatically extracts filters from the query to improve retrieval accuracy.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <h5 class="card-title">Multi Query</h5>
+                    <p class="card-text">Generates multiple query variations to improve retrieval coverage and accuracy.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-layers"></i>
+                    </div>
+                    <h5 class="card-title">Hybrid Search</h5>
+                    <p class="card-text">Combines keyword and semantic search for better results across different query types.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

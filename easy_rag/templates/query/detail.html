@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Query Detail{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .query-container {
+        margin-bottom: 2rem;
+    }
+    .response-container {
+        margin-top: 1rem;
+        margin-bottom: 2rem;
+    }
+    .context-container {
+        margin-top: 1.5rem;
+    }
+    .context-item {
+        background-color: #f8f9fa;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #0d6efd;
+    }
+    .context-source {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+    .context-text {
+        white-space: pre-wrap;
+    }
+    .context-score {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .query-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+    .query-meta-item {
+        display: flex;
+        align-items: center;
+    }
+    .query-meta-icon {
+        margin-right: 0.5rem;
+        color: #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('query.index') }}">Query</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('query.query_history') }}">History</a></li>
+            <li class="breadcrumb-item active">Detail</li>
+        </ol>
+    </nav>
+
+    <h1>Query Detail</h1>
+    <p class="lead">View the details of a specific query and its response.</p>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Query Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="query-meta">
+                <div class="query-meta-item">
+                    <i class="fas fa-calendar query-meta-icon"></i>
+                    <span>{{ query.timestamp.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+                <div class="query-meta-item">
+                    <i class="fas fa-robot query-meta-icon"></i>
+                    <span>{{ query.llm_used }}</span>
+                </div>
+                <div class="query-meta-item">
+                    <i class="fas fa-search query-meta-icon"></i>
+                    <span>{{ query.retriever_used }}</span>
+                </div>
+            </div>
+            
+            <div class="query-container">
+                <h5>Question</h5>
+                <div class="alert alert-secondary">
+                    {{ query.query }}
+                </div>
+            </div>
+            
+            <div class="response-container">
+                <h5>Response</h5>
+                <div class="alert alert-light">
+                    {{ query.response|nl2br }}
+                </div>
+            </div>
+            
+            <div class="context-container">
+                <h5>Retrieved Context</h5>
+                {% for context in query.contexts %}
+                <div class="context-item">
+                    <div class="context-source">Source: {{ context.source }}</div>
+                    <div class="context-text">{{ context.text }}</div>
+                    <div class="context-score">Relevance: {{ (context.score * 100)|round(1) }}%</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="mb-4">
+        <a href="{{ url_for('query.index') }}" class="btn btn-primary">New Query</a>
+        <a href="{{ url_for('query.query_history') }}" class="btn btn-secondary">Back to History</a>
+    </div>
+</div>
+{% endblock %}

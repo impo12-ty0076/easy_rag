@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Error - {{ error.status_code }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h2>Error {{ error.status_code }}</h2>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <img src="{{ url_for('static', filename='img/error.svg') }}" alt="Error" style="max-width: 300px;">
+                </div>
+                <p class="lead text-center">{{ error.message }}</p>
+                
+                {% if error.payload and error.payload.error_code %}
+                <div class="error-explanation mt-4" data-error-code="{{ error.payload.error_code }}">
+                    <h6>What happened:</h6>
+                    <p id="error-explanation">Loading explanation...</p>
+                    <h6>How to fix it:</h6>
+                    <p id="error-solution">Loading solution...</p>
+                    <button class="btn btn-sm btn-outline-danger mt-2" id="show-details-btn">Show Technical Details</button>
+                    <div class="mt-2 d-none" id="error-details">
+                        {% if error.payload.details %}
+                        <pre class="bg-light p-3 rounded"><code>{{ error.payload.details }}</code></pre>
+                        {% else %}
+                        <p>No additional details available.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary">Return to Home</a>
+                    <a href="{{ url_for('help.index') }}" class="btn btn-outline-secondary ms-2">View Help</a>
+                </div>
+                
+                {% if error.payload and error.payload.error_code %}
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Fetch error explanation
+                        fetch('/help/error/{{ error.payload.error_code }}')
+                            .then(response => response.json())
+                            .then(data => {
+                                document.getElementById('error-explanation').textContent = data.explanation;
+                                document.getElementById('error-solution').textContent = data.solution;
+                            })
+                            .catch(error => {
+                                console.error('Error fetching error explanation:', error);
+                                document.getElementById('error-explanation').textContent = 'No specific information is available for this error.';
+                                document.getElementById('error-solution').textContent = 'Try restarting the application or check the logs for more details.';
+                            });
+                            
+                        // Show/hide technical details
+                        document.getElementById('show-details-btn').addEventListener('click', function() {
+                            const detailsElement = document.getElementById('error-details');
+                            if (detailsElement.classList.contains('d-none')) {
+                                detailsElement.classList.remove('d-none');
+                                this.textContent = 'Hide Technical Details';
+                            } else {
+                                detailsElement.classList.add('d-none');
+                                this.textContent = 'Show Technical Details';
+                            }
+                        });
+                    });
+                </script>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

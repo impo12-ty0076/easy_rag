@@ -1,0 +1,810 @@
+{% extends 'base.html' %}
+
+{% block title %}Easy RAG System - Text Splitting Configuration{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2>Text Splitting Configuration</h2>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info alert-permanent">
+                    <p>Text splitting is a crucial step in creating a vector database. It determines how your documents
+                        are divided into chunks for embedding and retrieval.</p>
+                </div>
+
+                <form id="textSplittingForm" method="post" action="{{ url_for('vector_db.text_splitting') }}">
+                    <!-- Step 1: Text Splitting Strategy -->
+                    <div class="mb-4">
+                        <h4>Step 1: Select Text Splitting Strategy</h4>
+                        <div class="alert alert-light alert-permanent border">
+                            <p>Choose how you want to split your documents into chunks:</p>
+
+                            <div class="row row-cols-1 row-cols-md-4 g-4">
+                                <!-- Character Text Splitter -->
+                                <div class="col">
+                                    <div class="card h-100 splitter-card" data-splitter-id="character">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Character Text Splitter</h5>
+                                            <p class="card-text">Splits text based on character count. Simple but
+                                                effective for most use cases.</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input splitter-radio" type="radio"
+                                                    name="splitter_type" id="splitterCharacter" value="character">
+                                                <label class="form-check-label" for="splitterCharacter">
+                                                    Select
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Token Text Splitter (Removed) -->
+
+                                <!-- Recursive Text Splitter -->
+                                <div class="col">
+                                    <div class="card h-100 splitter-card" data-splitter-id="recursive">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Recursive Text Splitter</h5>
+                                            <p class="card-text">Intelligently splits text based on multiple separators
+                                                (paragraphs, sentences, etc.).</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input splitter-radio" type="radio"
+                                                    name="splitter_type" id="splitterRecursive" value="recursive">
+                                                <label class="form-check-label" for="splitterRecursive">
+                                                    Select
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Recursive Character Text Splitter -->
+                                <div class="col">
+                                    <div class="card h-100 splitter-card" data-splitter-id="recursive_character">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Recursive Character Text Splitter</h5>
+                                            <p class="card-text">Splits text recursively using a list of characters in order of preference with custom length function.</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input splitter-radio" type="radio"
+                                                    name="splitter_type" id="splitterRecursiveCharacter" value="recursive_character">
+                                                <label class="form-check-label" for="splitterRecursiveCharacter">
+                                                    Select
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Sentence Text Splitter -->
+                                <div class="col">
+                                    <div class="card h-100 splitter-card" data-splitter-id="sentence">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Sentence Text Splitter</h5>
+                                            <p class="card-text">Splits text at sentence boundaries for more natural
+                                                chunks.</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input splitter-radio" type="radio"
+                                                    name="splitter_type" id="splitterSentence" value="sentence"
+                                                    disabled>
+                                                <label class="form-check-label" for="splitterSentence">
+                                                    Coming Soon
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Paragraph Text Splitter -->
+                                <div class="col">
+                                    <div class="card h-100 splitter-card" data-splitter-id="paragraph">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Paragraph Text Splitter</h5>
+                                            <p class="card-text">Splits text at paragraph boundaries for context
+                                                preservation.</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input splitter-radio" type="radio"
+                                                    name="splitter_type" id="splitterParagraph" value="paragraph"
+                                                    disabled>
+                                                <label class="form-check-label" for="splitterParagraph">
+                                                    Coming Soon
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Semantic Text Splitter -->
+                                <div class="col">
+                                    <div class="card h-100 splitter-card" data-splitter-id="semantic">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Semantic Chunker</h5>
+                                            <p class="card-text">Splits text based on semantic meaning to preserve
+                                                context using embeddings.</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input splitter-radio" type="radio"
+                                                    name="splitter_type" id="splitterSemantic" value="semantic">
+                                                <label class="form-check-label" for="splitterSemantic">
+                                                    Select
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Code Text Splitter -->
+                                <div class="col">
+                                    <div class="card h-100 splitter-card" data-splitter-id="code">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Code Text Splitter</h5>
+                                            <p class="card-text">Specialized for code files, preserving functions and
+                                                classes.</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input splitter-radio" type="radio"
+                                                    name="splitter_type" id="splitterCode" value="code">
+                                                <label class="form-check-label" for="splitterCode">
+                                                    Select
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Markdown Text Splitter -->
+                                <div class="col">
+                                    <div class="card h-100 splitter-card" data-splitter-id="markdown">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Markdown Text Splitter</h5>
+                                            <p class="card-text">Specialized for markdown files, preserving headers and
+                                                structure.</p>
+                                            <div class="form-check">
+                                                <input class="form-check-input splitter-radio" type="radio"
+                                                    name="splitter_type" id="splitterMarkdown" value="markdown"
+                                                    disabled>
+                                                <label class="form-check-label" for="splitterMarkdown">
+                                                    Coming Soon
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="splitterSelectionError" class="text-danger mt-2" style="display: none;">
+                                Please select a text splitting strategy.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Configure Chunk Size and Overlap -->
+                    <div class="mb-4">
+                        <h4>Step 2: Configure Chunk Size and Overlap</h4>
+                        <div class="alert alert-light alert-permanent border">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="chunkSize" class="form-label">Chunk Size</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="chunkSize" name="chunk_size"
+                                                min="100" max="8000" value="1000">
+                                            <span class="input-group-text" id="chunkSizeUnit">characters</span>
+                                        </div>
+                                        <div class="form-text">
+                                            The size of each text chunk. Recommended range: 100-8000.
+                                            <span id="chunkSizeRecommendation" class="text-info"></span>
+                                        </div>
+                                        <div id="chunkSizeError" class="text-danger" style="display: none;"></div>
+                                    </div>
+                                    
+                                    <!-- Separator options (visible only for character splitter) -->
+                                    <div id="separatorOptions" class="mb-3">
+                                        <label for="separatorSelect" class="form-label">Separator</label>
+                                        <div class="input-group">
+                                            <select class="form-select" id="separatorSelect" name="separator_type">
+                                                <option value="paragraph" selected>Paragraph (\n\n)</option>
+                                                <option value="line">Line (\n)</option>
+                                                <option value="sentence">Sentence (. )</option>
+                                                <option value="comma">Comma (, )</option>
+                                                <option value="space">Space ( )</option>
+                                                <option value="custom">Custom</option>
+                                            </select>
+                                        </div>
+                                        <div id="customSeparatorGroup" class="mt-2" style="display: none;">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="customSeparator" name="custom_separator" placeholder="Enter custom separator">
+                                                <div class="input-group-text">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="isRegexSeparator" name="is_separator_regex">
+                                                        <label class="form-check-label" for="isRegexSeparator">Regex</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-text">
+                                                Enter a custom separator or regular expression pattern.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="chunkOverlap" class="form-label">Chunk Overlap</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="chunkOverlap"
+                                                name="chunk_overlap" min="0" max="500" value="200">
+                                            <span class="input-group-text" id="chunkOverlapUnit">characters</span>
+                                        </div>
+                                        <div class="form-text">
+                                            The overlap between consecutive chunks. Recommended range: 0-20% of chunk
+                                            size.
+                                            <span id="chunkOverlapRecommendation" class="text-info"></span>
+                                        </div>
+                                        <div id="chunkOverlapError" class="text-danger" style="display: none;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                        </div>
+                    </div>
+
+                    <!-- Continue button -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('vector_db.create') }}" class="btn btn-secondary">Back</a>
+                        <button type="button" id="continueButton" class="btn btn-primary">Continue to Embedding
+                            Model</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Get stored values from session storage
+        const storedSplitterType = sessionStorage.getItem('selectedSplitterType');
+        const storedChunkSize = sessionStorage.getItem('selectedChunkSize');
+        const storedChunkOverlap = sessionStorage.getItem('selectedChunkOverlap');
+        const storedSeparatorType = sessionStorage.getItem('selectedSeparatorType');
+        const storedCustomSeparator = sessionStorage.getItem('customSeparator');
+        const storedIsRegexSeparator = sessionStorage.getItem('isRegexSeparator');
+        
+        // Set default values based on stored values or defaults
+        if (storedSplitterType) {
+            document.querySelector(`input[name="splitter_type"][value="${storedSplitterType}"]`).checked = true;
+            updateSplitterSelection(storedSplitterType);
+        } else {
+            // Default to character splitter
+            document.querySelector('input[name="splitter_type"][value="character"]').checked = true;
+            updateSplitterSelection('character');
+        }
+
+        if (storedChunkSize) {
+            document.getElementById('chunkSize').value = storedChunkSize;
+        }
+
+        if (storedChunkOverlap) {
+            document.getElementById('chunkOverlap').value = storedChunkOverlap;
+        }
+        
+        // Set separator values if stored
+        if (storedSeparatorType) {
+            document.getElementById('separatorSelect').value = storedSeparatorType;
+            if (storedSeparatorType === 'custom') {
+                document.getElementById('customSeparatorGroup').style.display = 'block';
+                if (storedCustomSeparator) {
+                    document.getElementById('customSeparator').value = storedCustomSeparator;
+                }
+                if (storedIsRegexSeparator === 'true') {
+                    document.getElementById('isRegexSeparator').checked = true;
+                }
+            }
+        }
+        
+        // Add event listener for separator select
+        const separatorSelect = document.getElementById('separatorSelect');
+        if (separatorSelect) {
+            separatorSelect.addEventListener('change', function() {
+                const customSeparatorGroup = document.getElementById('customSeparatorGroup');
+                if (this.value === 'custom') {
+                    customSeparatorGroup.style.display = 'block';
+                } else {
+                    customSeparatorGroup.style.display = 'none';
+                }
+            });
+        }
+
+        // Add event listeners to splitter cards
+        document.querySelectorAll('.splitter-card').forEach(card => {
+            card.addEventListener('click', function () {
+                const splitterId = this.dataset.splitterId;
+                const radio = document.querySelector(`input[name="splitter_type"][value="${splitterId}"]`);
+                
+                // Skip if the radio is disabled (coming soon features)
+                if (radio.disabled) {
+                    return;
+                }
+                
+                radio.checked = true;
+
+                // Update UI based on selection
+                updateSplitterSelection(splitterId);
+
+                // Remove selection from all cards
+                document.querySelectorAll('.splitter-card').forEach(c => {
+                    c.classList.remove('border-primary');
+                });
+
+                // Add selection to this card
+                this.classList.add('border-primary');
+            });
+        });
+
+        // Add event listeners for chunk size and overlap inputs
+        const chunkSizeInput = document.getElementById('chunkSize');
+        const chunkOverlapInput = document.getElementById('chunkOverlap');
+
+        chunkSizeInput.addEventListener('input', function () {
+            validateChunkSize();
+        });
+
+        chunkOverlapInput.addEventListener('input', function () {
+            validateChunkOverlap();
+        });
+
+        // Continue button click handler
+        const continueButton = document.getElementById('continueButton');
+        continueButton.addEventListener('click', function () {
+            if (validateForm()) {
+                // Store values in session storage
+                const selectedSplitterType = document.querySelector('input[name="splitter_type"]:checked').value;
+                const chunkSize = document.getElementById('chunkSize').value;
+                const chunkOverlap = document.getElementById('chunkOverlap').value;
+                
+                // Store separator values if character splitter is selected
+                let separatorType = '';
+                let customSeparator = '';
+                let isRegexSeparator = false;
+                
+                if (selectedSplitterType === 'character') {
+                    separatorType = document.getElementById('separatorSelect').value;
+                    sessionStorage.setItem('selectedSeparatorType', separatorType);
+                    
+                    if (separatorType === 'custom') {
+                        customSeparator = document.getElementById('customSeparator').value;
+                        isRegexSeparator = document.getElementById('isRegexSeparator').checked;
+                        
+                        sessionStorage.setItem('customSeparator', customSeparator);
+                        sessionStorage.setItem('isRegexSeparator', isRegexSeparator);
+                        
+                        // Add hidden inputs for custom separator
+                        const customSeparatorInput = document.createElement('input');
+                        customSeparatorInput.type = 'hidden';
+                        customSeparatorInput.name = 'custom_separator';
+                        customSeparatorInput.value = customSeparator;
+                        document.getElementById('textSplittingForm').appendChild(customSeparatorInput);
+                        
+                        const isRegexInput = document.createElement('input');
+                        isRegexInput.type = 'hidden';
+                        isRegexInput.name = 'is_separator_regex';
+                        isRegexInput.value = isRegexSeparator;
+                        document.getElementById('textSplittingForm').appendChild(isRegexInput);
+                    }
+                }
+                
+                // Store language if code splitter is selected
+                if (selectedSplitterType === 'code') {
+                    const languageSelect = document.getElementById('languageSelect');
+                    if (languageSelect) {
+                        sessionStorage.setItem('selectedLanguage', languageSelect.value);
+                    }
+                }
+
+                sessionStorage.setItem('selectedSplitterType', selectedSplitterType);
+                sessionStorage.setItem('selectedChunkSize', chunkSize);
+                sessionStorage.setItem('selectedChunkOverlap', chunkOverlap);
+
+                // Submit the form
+                document.getElementById('textSplittingForm').submit();
+            }
+        });
+
+        // Initial validation
+        validateChunkSize();
+        validateChunkOverlap();
+    });
+
+    function updateSplitterSelection(splitterType) {
+        const chunkSizeUnit = document.getElementById('chunkSizeUnit');
+        const chunkOverlapUnit = document.getElementById('chunkOverlapUnit');
+        const chunkSizeInput = document.getElementById('chunkSize');
+        const chunkOverlapInput = document.getElementById('chunkOverlap');
+        const chunkSizeRecommendation = document.getElementById('chunkSizeRecommendation');
+        const chunkOverlapRecommendation = document.getElementById('chunkOverlapRecommendation');
+        const separatorOptions = document.getElementById('separatorOptions');
+        
+        // Show/hide separator options based on splitter type
+        if (splitterType === 'character') {
+            separatorOptions.style.display = 'block';
+        } else {
+            separatorOptions.style.display = 'none';
+        }
+
+        // Update units and recommendations based on splitter type
+        switch (splitterType) {
+            case 'recursive_character':
+                chunkSizeUnit.textContent = 'characters';
+                chunkOverlapUnit.textContent = 'characters';
+                chunkSizeRecommendation.textContent = ' For recursive splitting, 250-1000 characters is optimal.';
+                chunkOverlapRecommendation.textContent = ' 20-50 characters is typically sufficient.';
+
+                // Update min/max values
+                chunkSizeInput.min = 100;
+                chunkSizeInput.max = 8000;
+                chunkSizeInput.value = 250;
+
+                chunkOverlapInput.min = 0;
+                chunkOverlapInput.max = 200;
+                chunkOverlapInput.value = 50;
+                break;
+                
+            // Token Text Splitter case removed
+
+            case 'sentence':
+                chunkSizeUnit.textContent = 'sentences';
+                chunkOverlapUnit.textContent = 'sentences';
+                chunkSizeRecommendation.textContent = ' 3-10 sentences is typically optimal.';
+                chunkOverlapRecommendation.textContent = ' 1-2 sentences is typically sufficient.';
+
+                // Update min/max values
+                chunkSizeInput.min = 1;
+                chunkSizeInput.max = 20;
+                chunkSizeInput.value = 5;
+
+                chunkOverlapInput.min = 0;
+                chunkOverlapInput.max = 5;
+                chunkOverlapInput.value = 1;
+                break;
+
+            case 'paragraph':
+                chunkSizeUnit.textContent = 'paragraphs';
+                chunkOverlapUnit.textContent = 'paragraphs';
+                chunkSizeRecommendation.textContent = ' 1-5 paragraphs is typically optimal.';
+                chunkOverlapRecommendation.textContent = ' 0-1 paragraphs is typically sufficient.';
+
+                // Update min/max values
+                chunkSizeInput.min = 1;
+                chunkSizeInput.max = 10;
+                chunkSizeInput.value = 2;
+
+                chunkOverlapInput.min = 0;
+                chunkOverlapInput.max = 3;
+                chunkOverlapInput.value = 1;
+                break;
+
+            case 'semantic':
+                chunkSizeUnit.textContent = 'threshold';
+                chunkOverlapUnit.textContent = 'overlap';
+                chunkSizeRecommendation.textContent = ' For semantic chunking, threshold depends on the method.';
+                chunkOverlapRecommendation.textContent = ' Overlap is not directly used in semantic chunking.';
+
+                // Update min/max values
+                chunkSizeInput.min = 50;
+                chunkSizeInput.max = 90;
+                chunkSizeInput.value = 70;
+
+                chunkOverlapInput.min = 0;
+                chunkOverlapInput.max = 0;
+                chunkOverlapInput.value = 0;
+                chunkOverlapInput.disabled = true;
+                
+            case 'code':
+                chunkSizeUnit.textContent = 'characters';
+                chunkOverlapUnit.textContent = 'characters';
+                chunkSizeRecommendation.textContent = ' For code splitting, 400-1000 characters is optimal.';
+                chunkOverlapRecommendation.textContent = ' 50-100 characters is typically sufficient.';
+
+                // Update min/max values
+                chunkSizeInput.min = 100;
+                chunkSizeInput.max = 8000;
+                chunkSizeInput.value = 400;
+
+                chunkOverlapInput.min = 0;
+                chunkOverlapInput.max = 200;
+                chunkOverlapInput.value = 50;
+                chunkOverlapInput.disabled = false;
+                
+                // Add code splitter specific options
+                if (!document.getElementById('codeOptions')) {
+                    const codeOptions = document.createElement('div');
+                    codeOptions.id = 'codeOptions';
+                    codeOptions.className = 'mb-3';
+                    codeOptions.innerHTML = `
+                        <label for="languageSelect" class="form-label">Programming Language</label>
+                        <div class="input-group">
+                            <select class="form-select" id="languageSelect" name="language">
+                                <option value="PYTHON" selected>Python</option>
+                                <option value="JAVASCRIPT">JavaScript</option>
+                                <option value="JAVA">Java</option>
+                                <option value="CPP">C++</option>
+                                <option value="CSHARP">C#</option>
+                                <option value="PHP">PHP</option>
+                                <option value="RUBY">Ruby</option>
+                                <option value="GO">Go</option>
+                                <option value="RUST">Rust</option>
+                                <option value="TYPESCRIPT">TypeScript</option>
+                                <option value="SWIFT">Swift</option>
+                                <option value="KOTLIN">Kotlin</option>
+                                <option value="HTML">HTML</option>
+                                <option value="CSS">CSS</option>
+                                <option value="SQL">SQL</option>
+                                <option value="MARKDOWN">Markdown</option>
+                            </select>
+                        </div>
+                        <div class="form-text">
+                            Select the programming language of your code for optimal splitting.
+                        </div>
+                    `;
+                    document.querySelector('.alert-light.alert-permanent.border').appendChild(codeOptions);
+                } else {
+                    document.getElementById('codeOptions').style.display = 'block';
+                }
+                
+                // Store the selected language in session storage
+                const languageSelect = document.getElementById('languageSelect');
+                if (languageSelect) {
+                    const storedLanguage = sessionStorage.getItem('selectedLanguage');
+                    if (storedLanguage) {
+                        languageSelect.value = storedLanguage;
+                    }
+                    
+                    languageSelect.addEventListener('change', function() {
+                        sessionStorage.setItem('selectedLanguage', this.value);
+                    });
+                }
+                break;
+                
+                // Add semantic chunker specific options
+                if (!document.getElementById('semanticOptions')) {
+                    const semanticOptions = document.createElement('div');
+                    semanticOptions.id = 'semanticOptions';
+                    semanticOptions.className = 'mb-3';
+                    semanticOptions.innerHTML = `
+                        <label for="thresholdTypeSelect" class="form-label">Threshold Type</label>
+                        <div class="input-group">
+                            <select class="form-select" id="thresholdTypeSelect" name="threshold_type">
+                                <option value="percentile" selected>Percentile</option>
+                                <option value="standard_deviation">Standard Deviation</option>
+                                <option value="interquartile">Interquartile Range</option>
+                            </select>
+                        </div>
+                        <div class="form-text">
+                            <span id="thresholdTypeDescription">
+                                Percentile: Splits based on a percentile of all differences between adjacent sentences.
+                            </span>
+                        </div>
+                    `;
+                    
+                    // Insert after chunk size
+                    const chunkSizeGroup = document.querySelector('label[for="chunkSize"]').parentNode;
+                    chunkSizeGroup.parentNode.insertBefore(semanticOptions, chunkSizeGroup.nextSibling);
+                    
+                    // Add event listener for threshold type select
+                    document.getElementById('thresholdTypeSelect').addEventListener('change', function() {
+                        const description = document.getElementById('thresholdTypeDescription');
+                        switch(this.value) {
+                            case 'percentile':
+                                description.textContent = 'Percentile: Splits based on a percentile of all differences between adjacent sentences.';
+                                chunkSizeInput.min = 50;
+                                chunkSizeInput.max = 90;
+                                chunkSizeInput.value = 70;
+                                break;
+                            case 'standard_deviation':
+                                description.textContent = 'Standard Deviation: Splits based on standard deviation from the mean difference.';
+                                chunkSizeInput.min = 0.5;
+                                chunkSizeInput.max = 3;
+                                chunkSizeInput.value = 1.25;
+                                break;
+                            case 'interquartile':
+                                description.textContent = 'Interquartile Range: Splits based on interquartile range.';
+                                chunkSizeInput.min = 0.1;
+                                chunkSizeInput.max = 2;
+                                chunkSizeInput.value = 0.5;
+                                break;
+                        }
+                    });
+                } else {
+                    document.getElementById('semanticOptions').style.display = 'block';
+                }
+                break;apUnit.textContent = 'semantic units';
+                chunkSizeRecommendation.textContent = ' 3-8 semantic units is typically optimal.';
+                chunkOverlapRecommendation.textContent = ' 1-2 semantic units is typically sufficient.';
+
+                // Update min/max values
+                chunkSizeInput.min = 1;
+                chunkSizeInput.max = 15;
+                chunkSizeInput.value = 5;
+
+                chunkOverlapInput.min = 0;
+                chunkOverlapInput.max = 5;
+                chunkOverlapInput.value = 1;
+                break;
+
+            case 'code':
+                chunkSizeUnit.textContent = 'functions';
+                chunkOverlapUnit.textContent = 'lines';
+                chunkSizeRecommendation.textContent = ' 1-3 functions per chunk is typically optimal.';
+                chunkOverlapRecommendation.textContent = ' 5-10 lines of overlap is typically sufficient.';
+
+                // Update min/max values
+                chunkSizeInput.min = 1;
+                chunkSizeInput.max = 10;
+                chunkSizeInput.value = 1;
+
+                chunkOverlapInput.min = 0;
+                chunkOverlapInput.max = 20;
+                chunkOverlapInput.value = 5;
+                break;
+
+            case 'markdown':
+                chunkSizeUnit.textContent = 'sections';
+                chunkOverlapUnit.textContent = 'lines';
+                chunkSizeRecommendation.textContent = ' 1-3 sections per chunk is typically optimal.';
+                chunkOverlapRecommendation.textContent = ' 3-5 lines of overlap is typically sufficient.';
+
+                // Update min/max values
+                chunkSizeInput.min = 1;
+                chunkSizeInput.max = 10;
+                chunkSizeInput.value = 1;
+
+                chunkOverlapInput.min = 0;
+                chunkOverlapInput.max = 10;
+                chunkOverlapInput.value = 3;
+                break;
+
+            case 'character':
+                chunkSizeUnit.textContent = 'characters';
+                chunkOverlapUnit.textContent = 'characters';
+                chunkSizeRecommendation.textContent = ' 1000-4000 characters is typically optimal.';
+                chunkOverlapRecommendation.textContent = ' 100-200 characters is typically sufficient.';
+
+                // Update min/max values
+                chunkSizeInput.min = 100;
+                chunkSizeInput.max = 8000;
+                chunkSizeInput.value = 1000;
+
+                chunkOverlapInput.min = 0;
+                chunkOverlapInput.max = 500;
+                chunkOverlapInput.value = 200;
+                break;
+
+            default: // recursive and others
+                chunkSizeUnit.textContent = 'characters';
+                chunkOverlapUnit.textContent = 'characters';
+                chunkSizeRecommendation.textContent = ' 1000-4000 characters is typically optimal.';
+                chunkOverlapRecommendation.textContent = ' 100-200 characters is typically sufficient.';
+
+                // Update min/max values
+                chunkSizeInput.min = 100;
+                chunkSizeInput.max = 8000;
+                chunkSizeInput.value = 1000;
+
+                chunkOverlapInput.min = 0;
+                chunkOverlapInput.max = 500;
+                chunkOverlapInput.value = 200;
+                break;
+        }
+
+        // Validate
+        validateChunkSize();
+        validateChunkOverlap();
+    }
+
+    function validateChunkSize() {
+        const chunkSizeInput = document.getElementById('chunkSize');
+        const chunkSizeError = document.getElementById('chunkSizeError');
+        const value = parseInt(chunkSizeInput.value);
+        const min = parseInt(chunkSizeInput.min);
+        const max = parseInt(chunkSizeInput.max);
+
+        if (isNaN(value) || value < min || value > max) {
+            chunkSizeError.textContent = `Please enter a value between ${min} and ${max}.`;
+            chunkSizeError.style.display = 'block';
+            return false;
+        } else {
+            chunkSizeError.style.display = 'none';
+            return true;
+        }
+    }
+
+    function validateChunkOverlap() {
+        const chunkSizeInput = document.getElementById('chunkSize');
+        const chunkOverlapInput = document.getElementById('chunkOverlap');
+        const chunkOverlapError = document.getElementById('chunkOverlapError');
+
+        const chunkSize = parseInt(chunkSizeInput.value);
+        const chunkOverlap = parseInt(chunkOverlapInput.value);
+        const min = parseInt(chunkOverlapInput.min);
+        const max = parseInt(chunkOverlapInput.max);
+
+        if (isNaN(chunkOverlap) || chunkOverlap < min || chunkOverlap > max) {
+            chunkOverlapError.textContent = `Please enter a value between ${min} and ${max}.`;
+            chunkOverlapError.style.display = 'block';
+            return false;
+        } else if (chunkOverlap >= chunkSize) {
+            chunkOverlapError.textContent = 'Overlap must be less than chunk size.';
+            chunkOverlapError.style.display = 'block';
+            return false;
+        } else {
+            chunkOverlapError.style.display = 'none';
+            return true;
+        }
+    }
+
+    function validateForm() {
+        let isValid = true;
+
+        // Validate splitter selection
+        const selectedSplitter = document.querySelector('input[name="splitter_type"]:checked');
+        const splitterSelectionError = document.getElementById('splitterSelectionError');
+
+        if (!selectedSplitter) {
+            splitterSelectionError.style.display = 'block';
+            isValid = false;
+        } else {
+            splitterSelectionError.style.display = 'none';
+        }
+
+        // Validate chunk size and overlap
+        if (!validateChunkSize()) {
+            isValid = false;
+        }
+
+        if (!validateChunkOverlap()) {
+            isValid = false;
+        }
+        
+        // Validate separator if character splitter is selected
+        if (selectedSplitter && selectedSplitter.value === 'character') {
+            const separatorType = document.getElementById('separatorSelect').value;
+            
+            if (separatorType === 'custom') {
+                const customSeparator = document.getElementById('customSeparator').value;
+                if (!customSeparator) {
+                    alert('Please enter a custom separator');
+                    isValid = false;
+                }
+            }
+        }
+
+        return isValid;
+    }
+
+    function updateChunkVisualization() {
+        // 시각화 기능 제거됨
+    }
+</script>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    .splitter-card {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .splitter-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .splitter-card.border-primary {
+        border-width: 2px;
+    }
+</style>
+{% endblock %}

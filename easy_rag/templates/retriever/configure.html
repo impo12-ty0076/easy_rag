@@ -1,0 +1,507 @@
+{% extends 'base.html' %}
+
+{% block title %}Configure Retriever{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .parameter-form {
+        display: none;
+    }
+    .parameter-form.active {
+        display: block;
+    }
+    .retriever-card {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+        height: 100%;
+    }
+    .retriever-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .retriever-card.selected {
+        border-color: #0d6efd;
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+    .retriever-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #0d6efd;
+    }
+    .category-header {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .form-range-container {
+        display: flex;
+        align-items: center;
+    }
+    .form-range {
+        flex-grow: 1;
+        margin: 0 10px;
+    }
+    .range-value {
+        min-width: 40px;
+        text-align: center;
+    }
+    .parameter-card {
+        background-color: #f8f9fa;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    .parameter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    .parameter-description {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .error-feedback {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    .is-invalid {
+        border-color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('retriever.index') }}">Retrievers</a></li>
+            <li class="breadcrumb-item active">Configure</li>
+        </ol>
+    </nav>
+
+    <h1>Configure Retriever for {{ vector_db.name }}</h1>
+    <p class="lead">Select a retriever type and configure its parameters.</p>
+
+    <form method="POST">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Select Retriever Type</h5>
+                    </div>
+                    <div class="card-body">
+                        <input type="hidden" id="retriever_type" name="retriever_type" 
+                            value="{{ current_config.retriever_type if current_config else '' }}">
+                        
+                        {% for category, retrievers in categorized_retrievers.items() %}
+                            <h4 class="category-header">{{ category|title }} Retrievers</h4>
+                            <div class="row row-cols-1 row-cols-md-2 g-4 mb-4">
+                                {% for type_id, type_info in retrievers.items() %}
+                                <div class="col">
+                                    <div class="card retriever-card {% if current_config and current_config.retriever_type == type_id %}selected{% endif %}" 
+                                         data-retriever-id="{{ type_id }}">
+                                        <div class="card-body text-center">
+                                            <div class="retriever-icon">
+                                                <i class="fas fa-{{ type_info.icon }}"></i>
+                                            </div>
+                                            <h5 class="card-title">{{ type_info.name }}</h5>
+                                            <p class="card-text">{{ type_info.description }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div id="parameter-container" class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Configure Parameters</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info" id="no-retriever-selected">
+                            Please select a retriever type above to configure its parameters.
+                        </div>
+                        
+                        {% for type_id, type_info in retriever_types.items() %}
+                        <div class="parameter-form" id="params-{{ type_id }}">
+                            <h5 class="mb-3">{{ type_info.name }} Parameters</h5>
+                            
+                            {% for param_name, param_info in type_info.parameters.items() %}
+                            <div class="parameter-card">
+                                <div class="parameter-header">
+                                    <label for="{{ param_name }}" class="form-label mb-0">
+                                        {{ param_name|replace('_', ' ')|title }}
+                                    </label>
+                                    {% if param_info.get('required', True) == False %}
+                                    <span class="badge bg-secondary">Optional</span>
+                                    {% endif %}
+                                </div>
+                                <p class="parameter-description">{{ param_info.description }}</p>
+                                
+                                {% if param_info.type == 'select' %}
+                                <select class="form-select {% if errors and param_name in errors %}is-invalid{% endif %}" 
+                                        id="{{ param_name }}" name="{{ param_name }}">
+                                    {% for option in param_info.options %}
+                                    <option value="{{ option }}" 
+                                        {% if current_config and current_config.parameters and current_config.parameters[param_name] == option %}selected{% endif %}>
+                                        {{ option|title }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                
+                                {% elif param_info.type == 'boolean' %}
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" 
+                                           id="{{ param_name }}" name="{{ param_name }}"
+                                           {% if current_config and current_config.parameters and current_config.parameters[param_name] %}checked{% endif %}>
+                                    <label class="form-check-label" for="{{ param_name }}">
+                                        {{ "Enabled" if current_config and current_config.parameters and current_config.parameters[param_name] else "Disabled" }}
+                                    </label>
+                                </div>
+                                
+                                {% elif param_info.type in ['int', 'float'] %}
+                                <div class="form-range-container">
+                                    <span class="range-value">{{ param_info.min }}</span>
+                                    <input type="range" 
+                                           class="form-range" 
+                                           id="{{ param_name }}_range" 
+                                           min="{{ param_info.min }}" 
+                                           max="{{ param_info.max }}" 
+                                           step="{{ '1' if param_info.type == 'int' else '0.1' }}"
+                                           value="{{ current_config.parameters[param_name] if current_config and current_config.parameters and param_name in current_config.parameters else param_info.default }}">
+                                    <span class="range-value">{{ param_info.max }}</span>
+                                </div>
+                                <div class="input-group mt-2">
+                                    <input type="number" 
+                                           class="form-control {% if errors and param_name in errors %}is-invalid{% endif %}" 
+                                           id="{{ param_name }}" 
+                                           name="{{ param_name }}" 
+                                           value="{{ current_config.parameters[param_name] if current_config and current_config.parameters and param_name in current_config.parameters else param_info.default }}"
+                                           step="{{ '1' if param_info.type == 'int' else '0.1' }}" 
+                                           min="{{ param_info.min }}" 
+                                           max="{{ param_info.max }}">
+                                    <span class="input-group-text">{{ param_info.get('unit', '') }}</span>
+                                </div>
+                                
+                                {% else %}
+                                <input type="text" 
+                                       class="form-control {% if errors and param_name in errors %}is-invalid{% endif %}" 
+                                       id="{{ param_name }}" 
+                                       name="{{ param_name }}" 
+                                       value="{{ current_config.parameters[param_name] if current_config and current_config.parameters and param_name in current_config.parameters else param_info.default }}">
+                                {% endif %}
+                                
+                                {% if errors and param_name in errors %}
+                                <div class="error-feedback">{{ errors[param_name] }}</div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">Save Configuration</button>
+                            <a href="{{ url_for('retriever.index') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Advanced Retrieval Options</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="parameter-card">
+                            <div class="parameter-header">
+                                <label for="reranking_llm" class="form-label mb-0">Reranking LLM</label>
+                            </div>
+                            <p class="parameter-description">Select a language model to rerank retrieved chunks for better relevance</p>
+                            
+                            <div class="row row-cols-1 row-cols-md-2 g-3 mb-3">
+                                {% for llm_id, llm_info in reranking_llms.items() %}
+                                <div class="col">
+                                    <div class="card h-100 {% if llm_info.requires_api_key and not llm_info.api_key_available %}text-muted{% endif %} 
+                                                {% if current_config and current_config.advanced_options and current_config.advanced_options.reranking_llm == llm_id %}border-primary{% endif %}">
+                                        <div class="card-body">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="reranking_llm" 
+                                                       id="reranking_llm_{{ llm_id }}" value="{{ llm_id }}"
+                                                       {% if current_config and current_config.advanced_options and current_config.advanced_options.reranking_llm == llm_id %}checked{% endif %}
+                                                       {% if llm_info.requires_api_key and not llm_info.api_key_available %}disabled{% endif %}>
+                                                <label class="form-check-label" for="reranking_llm_{{ llm_id }}">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-{{ llm_info.icon }} me-2 text-primary"></i>
+                                                        <strong>{{ llm_info.name }}</strong>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                            <p class="small mt-2 mb-1">{{ llm_info.description }}</p>
+                                            <div class="d-flex justify-content-between mt-2">
+                                                <span class="badge bg-info">Performance: {{ llm_info.performance }}</span>
+                                                <span class="badge bg-secondary">Latency: {{ llm_info.latency }}</span>
+                                            </div>
+                                            {% if llm_info.requires_api_key and not llm_info.api_key_available %}
+                                            <div class="alert alert-warning mt-2 mb-0 py-1 px-2 small">
+                                                <i class="fas fa-exclamation-triangle me-1"></i> API key required in .env file
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            {% if errors and 'reranking_llm' in errors %}
+                            <div class="error-feedback">{{ errors.reranking_llm }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="parameter-card">
+                            <div class="parameter-header">
+                                <label for="chunk_count" class="form-label mb-0">Chunk Count</label>
+                            </div>
+                            <p class="parameter-description">Number of chunks to retrieve for each query</p>
+                            
+                            <div class="form-range-container">
+                                <span class="range-value">1</span>
+                                <input type="range" 
+                                       class="form-range" 
+                                       id="chunk_count_range" 
+                                       min="1" 
+                                       max="20" 
+                                       step="1"
+                                       value="{{ current_config.advanced_options.chunk_count if current_config and current_config.advanced_options and current_config.advanced_options.chunk_count else '4' }}">
+                                <span class="range-value">20</span>
+                            </div>
+                            <div class="input-group mt-2">
+                                <input type="number" 
+                                       class="form-control {% if errors and 'chunk_count' in errors %}is-invalid{% endif %}" 
+                                       id="chunk_count" 
+                                       name="chunk_count" 
+                                       value="{{ current_config.advanced_options.chunk_count if current_config and current_config.advanced_options and current_config.advanced_options.chunk_count else '4' }}"
+                                       step="1" 
+                                       min="1" 
+                                       max="20">
+                                <span class="input-group-text">chunks</span>
+                            </div>
+                            
+                            <div class="alert alert-info mt-3 small">
+                                <i class="fas fa-info-circle me-1"></i> 
+                                <strong>Tip:</strong> More chunks provide more context but may increase processing time and potentially introduce noise.
+                            </div>
+                            
+                            {% if errors and 'chunk_count' in errors %}
+                            <div class="error-feedback">{{ errors.chunk_count }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="parameter-card">
+                            <div class="parameter-header">
+                                <label for="use_hybrid_search" class="form-label mb-0">Hybrid Search</label>
+                            </div>
+                            <p class="parameter-description">Combine keyword and semantic search for better results</p>
+                            
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" role="switch" 
+                                       id="use_hybrid_search" name="use_hybrid_search"
+                                       {% if current_config and current_config.advanced_options and current_config.advanced_options.use_hybrid_search %}checked{% endif %}>
+                                <label class="form-check-label" for="use_hybrid_search">
+                                    {{ "Enabled" if current_config and current_config.advanced_options and current_config.advanced_options.use_hybrid_search else "Disabled" }}
+                                </label>
+                            </div>
+                            
+                            <div class="alert alert-info small mb-3">
+                                <i class="fas fa-info-circle me-1"></i> 
+                                <strong>What is Hybrid Search?</strong> Hybrid search combines traditional keyword search with semantic (meaning-based) search for more comprehensive results.
+                            </div>
+                            
+                            <div id="hybrid_search_options" {% if not current_config or not current_config.advanced_options or not current_config.advanced_options.use_hybrid_search %}style="display: none;"{% endif %}>
+                                <div class="parameter-header">
+                                    <label for="hybrid_alpha" class="form-label mb-0">Hybrid Alpha</label>
+                                </div>
+                                <p class="parameter-description">Balance between keyword (0) and semantic (1) search</p>
+                                
+                                <div class="form-range-container">
+                                    <span class="range-value">0.0</span>
+                                    <input type="range" 
+                                           class="form-range" 
+                                           id="hybrid_alpha_range" 
+                                           min="0" 
+                                           max="1" 
+                                           step="0.1"
+                                           value="{{ current_config.advanced_options.hybrid_alpha if current_config and current_config.advanced_options and current_config.advanced_options.hybrid_alpha else '0.5' }}">
+                                    <span class="range-value">1.0</span>
+                                </div>
+                                <div class="input-group mt-2">
+                                    <input type="number" 
+                                           class="form-control {% if errors and 'hybrid_alpha' in errors %}is-invalid{% endif %}" 
+                                           id="hybrid_alpha" 
+                                           name="hybrid_alpha" 
+                                           value="{{ current_config.advanced_options.hybrid_alpha if current_config and current_config.advanced_options and current_config.advanced_options.hybrid_alpha else '0.5' }}"
+                                           step="0.1" 
+                                           min="0" 
+                                           max="1">
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mt-2 text-muted small">
+                                    <span>More keyword-focused</span>
+                                    <span>More semantic-focused</span>
+                                </div>
+                                
+                                {% if errors and 'hybrid_alpha' in errors %}
+                                <div class="error-feedback">{{ errors.hybrid_alpha }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-success mt-3">
+                            <i class="fas fa-save me-2"></i> 
+                            <strong>Settings Persistence:</strong> All advanced retrieval options will be saved with your retriever configuration.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Vector Database Info</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-5">Name</dt>
+                            <dd class="col-sm-7">{{ vector_db.name }}</dd>
+                            
+                            <dt class="col-sm-5">Embedding Model</dt>
+                            <dd class="col-sm-7">{{ vector_db.embedding_model }}</dd>
+                            
+                            <dt class="col-sm-5">Vector Store</dt>
+                            <dd class="col-sm-7">{{ vector_db.vector_store_type }}</dd>
+                            
+                            <dt class="col-sm-5">Chunks</dt>
+                            <dd class="col-sm-7">{{ vector_db.chunk_count }}</dd>
+                            
+                            <dt class="col-sm-5">Created</dt>
+                            <dd class="col-sm-7">{{ vector_db.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Retriever Help</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Different retriever types offer various strategies for finding the most relevant information:</p>
+                        
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-search me-2 text-primary"></i> <strong>Similarity Search</strong>: Basic vector similarity search.</li>
+                            <li class="mb-2"><i class="fas fa-shuffle me-2 text-primary"></i> <strong>MMR</strong>: Balances relevance with diversity.</li>
+                            <li class="mb-2"><i class="fas fa-compress me-2 text-primary"></i> <strong>Contextual Compression</strong>: Focuses on relevant parts.</li>
+                            <li class="mb-2"><i class="fas fa-filter me-2 text-primary"></i> <strong>Self Query</strong>: Extracts filters from the query.</li>
+                            <li class="mb-2"><i class="fas fa-list me-2 text-primary"></i> <strong>Multi Query</strong>: Uses multiple query variations.</li>
+                            <li class="mb-2"><i class="fas fa-layers me-2 text-primary"></i> <strong>Hybrid Search</strong>: Combines keyword and semantic search.</li>
+                        </ul>
+                        
+                        <p class="mb-0 mt-3"><small>Select the retriever type that best fits your use case.</small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const retrieverTypeInput = document.getElementById('retriever_type');
+        const retrieverCards = document.querySelectorAll('.retriever-card');
+        const parameterForms = document.querySelectorAll('.parameter-form');
+        const noRetrieverSelected = document.getElementById('no-retriever-selected');
+        
+        // Function to update the UI based on the selected retriever type
+        function updateRetrieverSelection(selectedType) {
+            // Update hidden input
+            retrieverTypeInput.value = selectedType;
+            
+            // Update card selection
+            retrieverCards.forEach(card => {
+                if (card.dataset.retrieverId === selectedType) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
+            });
+            
+            // Show parameters for selected type
+            parameterForms.forEach(form => {
+                form.classList.remove('active');
+            });
+            
+            if (selectedType) {
+                const selectedForm = document.getElementById(`params-${selectedType}`);
+                if (selectedForm) {
+                    selectedForm.classList.add('active');
+                    noRetrieverSelected.style.display = 'none';
+                } else {
+                    noRetrieverSelected.style.display = 'block';
+                }
+            } else {
+                noRetrieverSelected.style.display = 'block';
+            }
+        }
+        
+        // Initialize with current selection
+        updateRetrieverSelection(retrieverTypeInput.value);
+        
+        // Add click event to retriever cards
+        retrieverCards.forEach(card => {
+            card.addEventListener('click', function() {
+                const retrieverId = this.dataset.retrieverId;
+                updateRetrieverSelection(retrieverId);
+            });
+        });
+        
+        // Connect range inputs to number inputs
+        document.querySelectorAll('.form-range').forEach(range => {
+            const paramName = range.id.replace('_range', '');
+            const numberInput = document.getElementById(paramName);
+            
+            // Update number input when range changes
+            range.addEventListener('input', function() {
+                numberInput.value = this.value;
+            });
+            
+            // Update range when number input changes
+            numberInput.addEventListener('input', function() {
+                range.value = this.value;
+            });
+        });
+        
+        // Update boolean switch labels
+        document.querySelectorAll('.form-check-input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const label = this.nextElementSibling;
+                label.textContent = this.checked ? 'Enabled' : 'Disabled';
+                
+                // Special handling for hybrid search options
+                if (checkbox.id === 'use_hybrid_search') {
+                    const hybridOptions = document.getElementById('hybrid_search_options');
+                    if (hybridOptions) {
+                        hybridOptions.style.display = this.checked ? 'block' : 'none';
+                    }
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

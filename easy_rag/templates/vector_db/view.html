@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}Easy RAG System - Vector Database Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2>Vector Database Details</h2>
+                <div>
+                    <a href="{{ url_for('vector_db.index') }}" class="btn btn-secondary">Back to Vector Databases</a>
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">Delete</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Database Information</h4>
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Name</th>
+                                    <td>{{ vector_db.name }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Vector Store Type</th>
+                                    <td>{{ vector_db.vector_store_type }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Embedding Model</th>
+                                    <td>{{ vector_db.embedding_model }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Chunk Count</th>
+                                    <td>{{ vector_db.chunk_count }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Created At</th>
+                                    <td>{{ vector_db.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Path</th>
+                                    <td><code>{{ vector_db.path }}</code></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Text Splitter Configuration</h4>
+                        <div class="text-splitter-config">
+                            <pre class="bg-light p-3 rounded"><code>{{ vector_db.text_splitter | tojson(indent=2) }}</code></pre>
+                        </div>
+                        
+                        {% if vector_db.metadata %}
+                        <h4 class="mt-4">Additional Metadata</h4>
+                        <div class="metadata-container">
+                            <pre class="bg-light p-3 rounded"><code>{{ vector_db.metadata | tojson(indent=2) }}</code></pre>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <h4>Included Documents</h4>
+                        {% if documents %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Size</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for document in documents %}
+                                    <tr>
+                                        <td>{{ document.name }}</td>
+                                        <td>{{ document.type }}</td>
+                                        <td>{{ document.size | filesizeformat }}</td>
+                                        <td>
+                                            <a href="{{ url_for('document.view', id=document.id) }}" class="btn btn-sm btn-info">View</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <p>No documents found for this vector database.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete the vector database <strong>{{ vector_db.name }}</strong>?
+                This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('vector_db.delete', id=vector_db.id) }}" method="post">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    .text-splitter-config, .metadata-container {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}Help - Easy RAG System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Help Topics</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="#" class="list-group-item list-group-item-action help-button" data-help-id="document_management">
+                    <i class="bi bi-file-earmark-text me-2"></i> Document Management
+                </a>
+                <a href="#" class="list-group-item list-group-item-action help-button" data-help-id="vector_db_creation">
+                    <i class="bi bi-database me-2"></i> Vector Database Creation
+                </a>
+                <a href="#" class="list-group-item list-group-item-action help-button" data-help-id="retriever_configuration">
+                    <i class="bi bi-search me-2"></i> Retriever Configuration
+                </a>
+                <a href="#" class="list-group-item list-group-item-action help-button" data-help-id="query_interface">
+                    <i class="bi bi-chat-dots me-2"></i> Query Interface
+                </a>
+                <a href="#" class="list-group-item list-group-item-action help-button" data-help-id="settings">
+                    <i class="bi bi-gear me-2"></i> System Settings
+                </a>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Guided Tours</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="#" class="list-group-item list-group-item-action tour-button" data-tour-id="document_workflow">
+                    <i class="bi bi-signpost-2 me-2"></i> Document Management Workflow
+                </a>
+                <a href="#" class="list-group-item list-group-item-action tour-button" data-tour-id="vector_db_workflow">
+                    <i class="bi bi-signpost-2 me-2"></i> Vector Database Creation Workflow
+                </a>
+                <a href="#" class="list-group-item list-group-item-action tour-button" data-tour-id="query_workflow">
+                    <i class="bi bi-signpost-2 me-2"></i> Query Workflow
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Welcome to Easy RAG System Help</h5>
+            </div>
+            <div class="card-body">
+                <h4>Getting Started</h4>
+                <p>
+                    Easy RAG System is a user-friendly application designed to enable non-developers to create and use 
+                    Retrieval-Augmented Generation (RAG) systems. This help section provides information on how to use 
+                    the various features of the application.
+                </p>
+                
+                <h5>Basic Workflow</h5>
+                <ol>
+                    <li>
+                        <strong>Upload Documents</strong>: First, upload the documents you want to include in your RAG system.
+                        <a href="#" class="help-button" data-help-id="document_management">Learn more</a>
+                    </li>
+                    <li>
+                        <strong>Create Vector Database</strong>: Convert your documents into a vector database for semantic search.
+                        <a href="#" class="help-button" data-help-id="vector_db_creation">Learn more</a>
+                    </li>
+                    <li>
+                        <strong>Configure Retriever</strong>: Set up how documents are retrieved when you ask questions.
+                        <a href="#" class="help-button" data-help-id="retriever_configuration">Learn more</a>
+                    </li>
+                    <li>
+                        <strong>Ask Questions</strong>: Use the query interface to ask questions and get answers based on your documents.
+                        <a href="#" class="help-button" data-help-id="query_interface">Learn more</a>
+                    </li>
+                </ol>
+                
+                <h5>Guided Tours</h5>
+                <p>
+                    If you prefer a more interactive approach, you can take guided tours of the main workflows:
+                </p>
+                <ul>
+                    <li>
+                        <a href="#" class="tour-button" data-tour-id="document_workflow">Document Management Workflow</a>
+                    </li>
+                    <li>
+                        <a href="#" class="tour-button" data-tour-id="vector_db_workflow">Vector Database Creation Workflow</a>
+                    </li>
+                    <li>
+                        <a href="#" class="tour-button" data-tour-id="query_workflow">Query Workflow</a>
+                    </li>
+                </ul>
+                
+                <h5>Need More Help?</h5>
+                <p>
+                    Throughout the application, you'll find help icons <i class="bi bi-question-circle"></i> that provide 
+                    context-specific information. Click on these icons to learn more about specific features.
+                </p>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Troubleshooting</h5>
+            </div>
+            <div class="card-body">
+                <h5>Common Issues</h5>
+                <div class="accordion" id="troubleshootingAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                                I can't upload documents
+                            </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                            <div class="accordion-body">
+                                <p>If you're having trouble uploading documents, check the following:</p>
+                                <ul>
+                                    <li>Ensure the file format is supported (PDF, TXT, DOCX, etc.)</li>
+                                    <li>Check that the file size is under the maximum limit (16MB)</li>
+                                    <li>Verify that the uploads directory exists and has the correct permissions</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingTwo">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                                Vector database creation fails
+                            </button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                            <div class="accordion-body">
+                                <p>If vector database creation is failing, try the following:</p>
+                                <ul>
+                                    <li>Check that the documents contain extractable text</li>
+                                    <li>Ensure that the selected embedding model is available</li>
+                                    <li>Verify that you have provided any required API keys</li>
+                                    <li>Try using a different vector store or embedding model</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingThree">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">
+                                Dependencies won't install
+                            </button>
+                        </h2>
+                        <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                            <div class="accordion-body">
+                                <p>If dependencies are not installing correctly:</p>
+                                <ul>
+                                    <li>Check your internet connection</li>
+                                    <li>Verify that you have sufficient permissions</li>
+                                    <li>Try installing the dependencies manually using pip</li>
+                                    <li>Check the logs for specific error messages</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingFour">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour">
+                                Query responses are irrelevant
+                            </button>
+                        </h2>
+                        <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                            <div class="accordion-body">
+                                <p>If you're getting irrelevant responses to your queries:</p>
+                                <ul>
+                                    <li>Try increasing the number of chunks retrieved</li>
+                                    <li>Use a different retriever type (e.g., MMR instead of Similarity Search)</li>
+                                    <li>Check that your vector database contains relevant documents</li>
+                                    <li>Try a different embedding model or language model</li>
+                                    <li>Make your queries more specific</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/help.js') }}"></script>
+{% endblock %}

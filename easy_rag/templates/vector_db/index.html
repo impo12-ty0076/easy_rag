@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Easy RAG System - Vector Databases{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2>Vector Databases</h2>
+                <a href="{{ url_for('vector_db.create') }}" class="btn btn-primary">Create Vector Database</a>
+            </div>
+            <div class="card-body">
+                {% if vector_dbs %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Vector Store</th>
+                                <th>Documents</th>
+                                <th>Chunks</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for db in vector_dbs %}
+                            <tr>
+                                <td>{{ db.name }}</td>
+                                <td>{{ db.vector_store_type }}</td>
+                                <td>{{ db.document_ids|length }}</td>
+                                <td>{{ db.chunk_count }}</td>
+                                <td>{{ db.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('vector_db.view', id=db.id) }}" class="btn btn-sm btn-info">View</a>
+                                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ db.id }}">Delete</button>
+                                    </div>
+                                    
+                                    <!-- Delete Confirmation Modal -->
+                                    <div class="modal fade" id="deleteModal{{ db.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ db.id }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="deleteModalLabel{{ db.id }}">Confirm Deletion</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    Are you sure you want to delete the vector database <strong>{{ db.name }}</strong>?
+                                                    This action cannot be undone.
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <form action="{{ url_for('vector_db.delete', id=db.id) }}" method="post">
+                                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <p>No vector databases have been created yet. Click the "Create Vector Database" button to create your first vector database.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

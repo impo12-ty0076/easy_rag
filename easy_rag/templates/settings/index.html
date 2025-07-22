@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Easy RAG System - Settings{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>System Settings</h1>
+            <div>
+                <a href="{{ url_for('settings.diagnostics') }}" class="btn btn-info">
+                    <i class="bi bi-activity"></i> System Diagnostics
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2>Configuration Settings</h2>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('settings.save') }}" class="needs-validation" novalidate>
+                    <div class="form-group mb-3">
+                        <label for="document_path" class="form-label">Document Storage Path</label>
+                        <input type="text" class="form-control" id="document_path" name="document_path" 
+                               value="{{ config.UPLOAD_FOLDER }}" required>
+                        <div class="form-text">Path where uploaded documents will be stored</div>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label for="vector_db_path" class="form-label">Vector Database Storage Path</label>
+                        <input type="text" class="form-control" id="vector_db_path" name="vector_db_path" 
+                               value="{{ config.VECTOR_DB_FOLDER }}" required>
+                        <div class="form-text">Path where vector databases will be stored</div>
+                    </div>
+                    
+                    <h4 class="mt-4 mb-3">API Keys</h4>
+                    <div class="alert alert-info">
+                        <p>API keys are stored in your .env file and are used to access external services.</p>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label for="openai_api_key" class="form-label">OpenAI API Key</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="openai_api_key" name="openai_api_key" 
+                                   value="{{ env_vars.get('OPENAI_API_KEY', '') }}">
+                            <button class="btn btn-outline-secondary toggle-password" type="button" data-target="#openai_api_key">Show</button>
+                        </div>
+                        <div class="form-text">Required for OpenAI models (GPT-3.5, GPT-4, etc.)</div>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label for="huggingface_api_key" class="form-label">Hugging Face API Key</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="huggingface_api_key" name="huggingface_api_key" 
+                                   value="{{ env_vars.get('HUGGINGFACE_API_KEY', '') }}">
+                            <button class="btn btn-outline-secondary toggle-password" type="button" data-target="#huggingface_api_key">Show</button>
+                        </div>
+                        <div class="form-text">Required for some Hugging Face models and features</div>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label for="pinecone_api_key" class="form-label">Pinecone API Key</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="pinecone_api_key" name="pinecone_api_key" 
+                                   value="{{ env_vars.get('PINECONE_API_KEY', '') }}">
+                            <button class="btn btn-outline-secondary toggle-password" type="button" data-target="#pinecone_api_key">Show</button>
+                        </div>
+                        <div class="form-text">Required for Pinecone vector store</div>
+                    </div>
+                    
+                    <h4 class="mt-4 mb-3">System Configuration</h4>
+                    
+                    <div class="form-group mb-3">
+                        <label for="max_upload_size" class="form-label">Maximum Upload Size (MB)</label>
+                        <input type="number" class="form-control" id="max_upload_size" name="max_upload_size" 
+                               value="{{ config.MAX_CONTENT_LENGTH // (1024 * 1024) }}" min="1" max="100" required>
+                        <div class="form-text">Maximum file size for document uploads (in MB)</div>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="debug_mode" name="debug_mode" 
+                               {% if config.DEBUG %}checked{% endif %}>
+                        <label class="form-check-label" for="debug_mode">Enable Debug Mode</label>
+                        <div class="form-text">Enable detailed error messages and logging</div>
+                    </div>
+                    
+                    <div class="form-group mt-4">
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                        <a href="{{ url_for('settings.generate_requirements') }}" class="btn btn-secondary ms-2">
+                            Generate requirements.txt
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle password visibility
+        const togglePasswordButtons = document.querySelectorAll('.toggle-password');
+        togglePasswordButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const input = document.querySelector(this.getAttribute('data-target'));
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    this.textContent = 'Hide';
+                } else {
+                    input.type = 'password';
+                    this.textContent = 'Show';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

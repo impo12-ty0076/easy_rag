@@ -1,0 +1,910 @@
+{% extends 'base.html' %}
+
+{% block title %}Easy RAG System - Upload Document{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2>Upload Document</h2>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    <ul class="nav nav-tabs mb-3" id="uploadTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="file-tab" data-bs-toggle="tab"
+                                data-bs-target="#file-upload" type="button" role="tab" aria-controls="file-upload"
+                                aria-selected="true">Upload File</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="folder-tab" data-bs-toggle="tab"
+                                data-bs-target="#folder-upload" type="button" role="tab" aria-controls="folder-upload"
+                                aria-selected="false">Upload Folder</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="uploadTabsContent">
+                        <div class="tab-pane fade show active" id="file-upload" role="tabpanel"
+                            aria-labelledby="file-tab">
+                            <div class="mb-3">
+                                <label for="file" class="form-label">Select Document</label>
+                                <input type="file" class="form-control" id="file" name="file">
+                                <div class="form-text">
+                                    <strong>Supported file types:</strong> PDF, TXT, DOCX, CSV, XLSX, JSON, HTML, MD,
+                                    XML
+                                </div>
+                                <div class="form-text text-muted">
+                                    <small>Maximum file size: 50MB. Files will be validated for format
+                                        correctness.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="folder-upload" role="tabpanel" aria-labelledby="folder-tab">
+                            <div class="mb-3">
+                                <div class="drop-zone folder-drop-zone" id="folderDropZone">
+                                    <div class="drop-zone-prompt">
+                                        <i class="bi bi-folder2-open" style="font-size: 48px; color: #0d6efd;"></i>
+                                        <p class="mb-2"><strong>폴더를 드래그 앤 드롭하거나 클릭하여 선택하세요</strong></p>
+                                        <p class="small text-muted">지원되는 파일 형식: PDF, TXT, DOCX, CSV, XLSX, JSON, HTML,
+                                            MD, XML</p>
+                                        <p class="small text-muted">하위 폴더의 파일들도 모두 처리됩니다</p>
+                                    </div>
+                                    <input type="file" id="folderDropZoneInput" class="drop-zone-input" webkitdirectory
+                                        multiple style="display: none;">
+                                </div>
+
+                                <div id="folderFileList" class="mt-3" style="display: none;">
+                                    <div class="card">
+                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                            <h5 class="mb-0" id="selectedFolderName">선택된 폴더</h5>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                id="clearFolderBtn">
+                                                <i class="bi bi-x"></i> 선택 해제
+                                            </button>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row mb-3">
+                                                <div class="col-md-4">
+                                                    <strong>총 파일 수:</strong> <span id="fileCount"
+                                                        class="badge bg-primary">0</span>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <strong>지원되는 파일:</strong> <span id="supportedFileCount"
+                                                        class="badge bg-success">0</span>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <strong>지원되지 않는 파일:</strong> <span id="unsupportedFileCount"
+                                                        class="badge bg-warning">0</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <input type="text" class="form-control" id="folderFileSearch"
+                                                    placeholder="파일 검색...">
+                                            </div>
+
+                                            <div id="fileListContainer" style="max-height: 300px; overflow-y: auto;">
+                                                <div id="fileListPreview"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="extractMetadata" name="extractMetadata"
+                                checked>
+                            <label class="form-check-label" for="extractMetadata">
+                                Extract metadata from document
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description (optional)</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('document.index') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Upload</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 진행 상황 표시를 위한 숨겨진 요소 -->
+<div id="uploadProgress" class="mt-3" style="display: none;">
+    <div class="progress">
+        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0"
+            aria-valuemin="0" aria-valuemax="100">0%</div>
+    </div>
+</div>
+
+<div id="uploadList" class="mt-3">
+    <!-- Upload items will be added here dynamically -->
+</div>
+
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    .drop-zone {
+        max-width: 100%;
+        height: 200px;
+        padding: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        cursor: pointer;
+        color: #666;
+        border: 2px dashed #0d6efd;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .drop-zone:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+
+    .drop-zone.drop-zone-active {
+        background-color: rgba(13, 110, 253, 0.1);
+        border-color: #0b5ed7;
+    }
+
+    .drop-zone-prompt i {
+        font-size: 48px;
+        margin-bottom: 10px;
+    }
+
+    .folder-drop-zone {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 2px dashed #6c757d;
+        transition: all 0.3s ease;
+    }
+
+    .folder-drop-zone:hover {
+        border-color: #0d6efd;
+        background: linear-gradient(135deg, #e7f3ff 0%, #cce7ff 100%);
+    }
+
+    .folder-drop-zone.drop-zone-active {
+        border-color: #0b5ed7;
+        background: linear-gradient(135deg, #cce7ff 0%, #99d6ff 100%);
+        transform: scale(1.02);
+    }
+
+    .file-item {
+        transition: background-color 0.2s ease;
+    }
+
+    .file-item:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .folder-header {
+        transition: background-color 0.2s ease;
+    }
+
+    .folder-header:hover {
+        background-color: #e9ecef !important;
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    .bg-light-success {
+        background-color: rgba(25, 135, 84, 0.1);
+    }
+
+    .bg-light-danger {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // 드래그 앤 드롭 요소들
+        const dropZone = document.getElementById('folderDropZone'); // 폴더 드롭존만 사용
+        const dropZoneInput = document.getElementById('folderDropZoneInput');
+        const uploadList = document.getElementById('uploadList');
+        const progressBar = document.getElementById('progressBar');
+        const uploadProgress = document.getElementById('uploadProgress');
+        // browseButton과 folderPathInput은 더 이상 사용되지 않음 (폴더 드롭존으로 대체)
+        const folderDropZone = document.getElementById('folderDropZone');
+        const folderDropZoneInput = document.getElementById('folderDropZoneInput');
+        const folderFileList = document.getElementById('folderFileList');
+        const selectedFolderName = document.getElementById('selectedFolderName');
+        const fileCount = document.getElementById('fileCount');
+        const fileListPreview = document.getElementById('fileListPreview');
+
+        // 전역 변수로 선택된 폴더 파일들 저장
+        let selectedFolderFiles = null;
+
+        // 진행률 업데이트 헬퍼 함수
+        function updateProgress(percentage, text) {
+            if (progressBar) {
+                progressBar.style.width = `${percentage}%`;
+                progressBar.setAttribute('aria-valuenow', percentage);
+                progressBar.textContent = text || `${percentage}%`;
+            }
+        }
+
+        function setProgressError(text) {
+            if (progressBar) {
+                progressBar.style.width = '100%';
+                progressBar.setAttribute('aria-valuenow', 100);
+                progressBar.classList.remove('bg-primary');
+                progressBar.classList.add('bg-danger');
+                progressBar.textContent = text || '오류 발생';
+            }
+        }
+
+        // Set up folder drop zone
+        if (folderDropZone && folderDropZoneInput) {
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                folderDropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            // Highlight drop zone when item is dragged over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                folderDropZone.addEventListener(eventName, function () {
+                    folderDropZone.classList.add('drop-zone-active');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                folderDropZone.addEventListener(eventName, function () {
+                    folderDropZone.classList.remove('drop-zone-active');
+                }, false);
+            });
+
+            // Handle dropped folders
+            folderDropZone.addEventListener('drop', function (e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+
+                if (files.length > 0) {
+                    handleFolderSelection(files);
+                }
+            }, false);
+
+            // Handle click to select folder
+            folderDropZone.addEventListener('click', function () {
+                folderDropZoneInput.click();
+            });
+
+            folderDropZoneInput.addEventListener('change', function (e) {
+                handleFolderSelection(e.target.files);
+            });
+        }
+
+        // 지원되는 파일 확장자 목록
+        const allowedExtensions = ['txt', 'pdf', 'docx', 'doc', 'csv', 'json', 'html', 'md', 'xml', 'xls', 'xlsx'];
+
+        // 파일 확장자 확인 함수
+        function isAllowedFile(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            return allowedExtensions.includes(ext);
+        }
+
+        // 파일 아이콘 반환 함수
+        function getFileIcon(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            switch (ext) {
+                case 'pdf': return '<i class="bi bi-file-earmark-pdf text-danger"></i>';
+                case 'docx':
+                case 'doc': return '<i class="bi bi-file-earmark-word text-primary"></i>';
+                case 'xlsx':
+                case 'xls': return '<i class="bi bi-file-earmark-excel text-success"></i>';
+                case 'txt': return '<i class="bi bi-file-earmark-text text-secondary"></i>';
+                case 'md': return '<i class="bi bi-markdown text-info"></i>';
+                case 'json': return '<i class="bi bi-file-earmark-code text-warning"></i>';
+                case 'html': return '<i class="bi bi-file-earmark-code text-danger"></i>';
+                case 'xml': return '<i class="bi bi-file-earmark-code text-success"></i>';
+                case 'csv': return '<i class="bi bi-file-earmark-spreadsheet text-success"></i>';
+                default: return '<i class="bi bi-file-earmark text-muted"></i>';
+            }
+        }
+
+        // 폴더 선택 처리 함수
+        function handleFolderSelection(files) {
+            if (!files || files.length === 0) return;
+
+            // 폴더 선택인지 확인 (webkitRelativePath가 있어야 함)
+            if (!files[0].webkitRelativePath) {
+                alert('폴더를 선택해주세요. 개별 파일이 아닌 폴더를 선택해야 합니다.');
+                return;
+            }
+
+            // 선택된 파일들을 전역 변수에 저장
+            selectedFolderFiles = Array.from(files);
+
+            // 폴더 이름 추출
+            const folderPath = files[0].webkitRelativePath.split('/')[0];
+
+            // 파일 분류
+            const supportedFiles = [];
+            const unsupportedFiles = [];
+
+            Array.from(files).forEach(file => {
+                if (isAllowedFile(file.name)) {
+                    supportedFiles.push(file);
+                } else {
+                    unsupportedFiles.push(file);
+                }
+            });
+
+            // UI 업데이트
+            if (folderFileList) {
+                folderFileList.style.display = 'block';
+            }
+
+            if (selectedFolderName) {
+                selectedFolderName.textContent = `${folderPath} 폴더`;
+            }
+
+            // 파일 수 업데이트
+            document.getElementById('fileCount').textContent = files.length;
+            document.getElementById('supportedFileCount').textContent = supportedFiles.length;
+            document.getElementById('unsupportedFileCount').textContent = unsupportedFiles.length;
+
+            // 파일 목록 생성
+            displayFolderStructure(files, folderPath);
+        }
+
+        // 폴더 구조 표시 함수
+        function displayFolderStructure(files, folderName) {
+            const fileListPreview = document.getElementById('fileListPreview');
+            if (!fileListPreview) return;
+
+            // 파일들을 디렉토리별로 그룹화
+            const filesByDirectory = {};
+
+            Array.from(files).forEach(file => {
+                const relativePath = file.webkitRelativePath;
+                const pathParts = relativePath.split('/');
+
+                // 폴더 이름 제거 후 디렉토리 경로 생성
+                let dirPath = '';
+                if (pathParts.length > 2) {
+                    dirPath = pathParts.slice(1, -1).join('/');
+                }
+
+                if (!filesByDirectory[dirPath]) {
+                    filesByDirectory[dirPath] = [];
+                }
+
+                filesByDirectory[dirPath].push(file);
+            });
+
+            // HTML 생성
+            let html = '';
+            const directories = Object.keys(filesByDirectory).sort();
+
+            // 루트 디렉토리 파일들 먼저 표시
+            if (filesByDirectory['']) {
+                filesByDirectory[''].forEach(file => {
+                    const isSupported = isAllowedFile(file.name);
+                    const statusClass = isSupported ? 'text-success' : 'text-warning';
+                    const statusIcon = isSupported ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-exclamation-triangle-fill text-warning"></i>';
+
+                    html += `
+                        <div class="file-item d-flex align-items-center p-2 border-bottom" data-filename="${file.name.toLowerCase()}">
+                            ${getFileIcon(file.name)}
+                            <span class="ms-2 flex-grow-1">${file.name}</span>
+                            <small class="text-muted me-2">${formatFileSize(file.size)}</small>
+                            ${statusIcon}
+                        </div>
+                    `;
+                });
+            }
+
+            // 하위 디렉토리들 표시
+            directories.filter(dir => dir !== '').forEach(dir => {
+                const supportedCount = filesByDirectory[dir].filter(f => isAllowedFile(f.name)).length;
+                const totalCount = filesByDirectory[dir].length;
+
+                html += `
+                    <div class="folder-item mt-3">
+                        <div class="folder-header d-flex align-items-center p-2 bg-light border rounded cursor-pointer" onclick="toggleFolder(this)">
+                            <i class="bi bi-folder2 text-warning me-2"></i>
+                            <span class="flex-grow-1"><strong>${dir}</strong></span>
+                            <small class="text-muted me-2">${supportedCount}/${totalCount} 파일</small>
+                            <i class="bi bi-chevron-down toggle-icon"></i>
+                        </div>
+                        <div class="folder-content" style="display: none; margin-left: 20px;">
+                `;
+
+                filesByDirectory[dir].forEach(file => {
+                    const isSupported = isAllowedFile(file.name);
+                    const statusClass = isSupported ? 'text-success' : 'text-warning';
+                    const statusIcon = isSupported ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-exclamation-triangle-fill text-warning"></i>';
+
+                    html += `
+                        <div class="file-item d-flex align-items-center p-2 border-bottom" data-filename="${file.name.toLowerCase()}">
+                            ${getFileIcon(file.name)}
+                            <span class="ms-2 flex-grow-1">${file.name}</span>
+                            <small class="text-muted me-2">${formatFileSize(file.size)}</small>
+                            ${statusIcon}
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            fileListPreview.innerHTML = html;
+        }
+
+        // 폴더 토글 함수
+        function toggleFolder(element) {
+            const content = element.nextElementSibling;
+            const icon = element.querySelector('.toggle-icon');
+
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.classList.remove('bi-chevron-down');
+                icon.classList.add('bi-chevron-up');
+            } else {
+                content.style.display = 'none';
+                icon.classList.remove('bi-chevron-up');
+                icon.classList.add('bi-chevron-down');
+            }
+        }
+
+        // 폴더 파일 검색 기능
+        const folderFileSearch = document.getElementById('folderFileSearch');
+        if (folderFileSearch) {
+            folderFileSearch.addEventListener('input', function () {
+                const searchTerm = this.value.toLowerCase();
+                const fileItems = document.querySelectorAll('.file-item');
+
+                fileItems.forEach(item => {
+                    const filename = item.getAttribute('data-filename');
+                    if (filename.includes(searchTerm)) {
+                        item.style.display = 'flex';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+
+                // 폴더가 비어있으면 숨기기
+                const folderItems = document.querySelectorAll('.folder-item');
+                folderItems.forEach(folder => {
+                    const visibleFiles = folder.querySelectorAll('.file-item[style="display: flex;"], .file-item:not([style])');
+                    if (visibleFiles.length === 0 && searchTerm) {
+                        folder.style.display = 'none';
+                    } else {
+                        folder.style.display = 'block';
+                    }
+                });
+            });
+        }
+
+        // 폴더 선택 해제 버튼
+        const clearFolderBtn = document.getElementById('clearFolderBtn');
+        if (clearFolderBtn) {
+            clearFolderBtn.addEventListener('click', function () {
+                selectedFolderFiles = null;
+                folderFileList.style.display = 'none';
+                folderDropZoneInput.value = '';
+
+                // 숨겨진 입력 필드 제거
+                const existingInput = document.querySelector('input[name="folder_files"]');
+                if (existingInput) {
+                    existingInput.remove();
+                }
+            });
+        }
+
+        // 폼 제출 처리
+        const uploadForm = document.getElementById('uploadForm');
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function (e) {
+                // 폴더 탭이 활성화되어 있고 폴더가 선택된 경우
+                const folderTab = document.getElementById('folder-tab');
+                if (folderTab && folderTab.classList.contains('active') && selectedFolderFiles) {
+                    e.preventDefault();
+                    handleFolderUpload();
+                    return false;
+                }
+            });
+        }
+
+        // 폴더 업로드 처리 함수
+        function handleFolderUpload() {
+            if (!selectedFolderFiles || selectedFolderFiles.length === 0) {
+                alert('업로드할 폴더를 선택해주세요.');
+                return;
+            }
+
+            const folderName = selectedFolderFiles[0].webkitRelativePath.split('/')[0];
+            const extractMetadata = document.getElementById('extractMetadata').checked;
+            const description = document.getElementById('description').value;
+
+            // 진행 상황 표시
+            if (uploadProgress) {
+                uploadProgress.style.display = 'block';
+            }
+            updateProgress(0, '0%');
+
+            // 업로드 항목 생성
+            const uploadItem = document.createElement('div');
+            uploadItem.className = 'alert alert-info d-flex justify-content-between align-items-center';
+            uploadItem.innerHTML = `
+                <div>
+                    <strong>폴더: ${folderName}</strong> (${selectedFolderFiles.length}개 파일)
+                </div>
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">업로드 중...</span>
+                </div>
+            `;
+            uploadList.appendChild(uploadItem);
+
+            // FormData 생성
+            const formData = new FormData();
+            formData.append('folder_name', folderName);
+            formData.append('extractMetadata', extractMetadata);
+            formData.append('description', description);
+
+            // 파일들 추가
+            selectedFolderFiles.forEach(file => {
+                formData.append('files[]', file);
+                formData.append('file_paths[]', file.webkitRelativePath);
+            });
+
+            // 진행률 업데이트
+            updateProgress(25, '25% (파일 준비 중...)');
+
+            // 서버로 전송
+            fetch('{{ url_for("document.upload_folder_ajax") }}', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => {
+                    updateProgress(75, '75% (처리 중...)');
+                    return response.json();
+                })
+                .then(data => {
+                    updateProgress(100, '100% (완료)');
+
+                    if (data.success) {
+                        uploadItem.className = 'alert alert-success d-flex justify-content-between align-items-center';
+                        uploadItem.innerHTML = `
+                        <div>
+                            <strong>폴더: ${folderName}</strong> - 업로드 성공 (${data.success_count}개 파일 처리됨, ${data.error_count}개 오류)
+                        </div>
+                        <div>
+                            <a href="{{ url_for('document.index') }}" class="btn btn-sm btn-primary">문서 보기</a>
+                        </div>
+                    `;
+
+                        // 상세 정보 표시
+                        if (data.processed_files && data.processed_files.length > 0) {
+                            const detailsId = 'folderDetails' + Date.now();
+                            const detailsDiv = document.createElement('div');
+                            detailsDiv.className = 'mt-3';
+                            detailsDiv.innerHTML = `
+                            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#${detailsId}" aria-expanded="false">
+                                상세 정보 보기
+                            </button>
+                            <div class="collapse mt-2" id="${detailsId}">
+                                <div class="card card-body">
+                                    <h6>처리된 파일들:</h6>
+                                    <div style="max-height: 200px; overflow-y: auto;">
+                                        ${data.processed_files.map(file => `
+                                            <div class="d-flex justify-content-between align-items-center p-2 border-bottom ${file.success ? 'bg-light-success' : 'bg-light-danger'}">
+                                                <span>${file.name}</span>
+                                                <span class="badge ${file.success ? 'bg-success' : 'bg-danger'}">
+                                                    ${file.success ? '성공' : '실패: ' + file.error}
+                                                </span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                            uploadItem.appendChild(detailsDiv);
+                        }
+                    } else {
+                        uploadItem.className = 'alert alert-danger d-flex justify-content-between align-items-center';
+                        uploadItem.innerHTML = `
+                        <div>
+                            <strong>폴더: ${folderName}</strong> - 오류: ${data.error}
+                        </div>
+                        <div>
+                            <i class="bi bi-x-circle-fill"></i>
+                        </div>
+                    `;
+                    }
+                })
+                .catch(error => {
+                    setProgressError('오류 발생');
+
+                    uploadItem.className = 'alert alert-danger d-flex justify-content-between align-items-center';
+                    uploadItem.innerHTML = `
+                    <div>
+                        <strong>폴더: ${folderName}</strong> - 업로드 실패: ${error.message || '알 수 없는 오류'}
+                    </div>
+                    <div>
+                        <i class="bi bi-x-circle-fill"></i>
+                    </div>
+                `;
+                    console.error('Error:', error);
+                });
+        }
+
+        // Function to format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 이 부분은 제거 - 폴더 드롭존만 사용
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight() {
+            if (dropZone) {
+                dropZone.classList.add('drop-zone-active');
+            }
+        }
+
+        function unhighlight() {
+            if (dropZone) {
+                dropZone.classList.remove('drop-zone-active');
+            }
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            // Check if this is a folder drop
+            if (files.length > 0 && files[0].webkitRelativePath) {
+                handleFolderDrop(files);
+            } else {
+                handleFiles(files);
+            }
+        }
+
+        function handleFolderDrop(files) {
+            if (files.length > 0 && uploadProgress && uploadList) {
+                uploadProgress.style.display = 'block';
+
+                // Get the folder name from the first file
+                const folderPath = files[0].webkitRelativePath.split('/')[0];
+
+                // Create upload item in the list
+                const uploadItem = document.createElement('div');
+                uploadItem.className = 'alert alert-info d-flex justify-content-between align-items-center';
+                uploadItem.innerHTML = `
+                    <div>
+                        <strong>Folder: ${folderPath}</strong> (${files.length} files)
+                    </div>
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Uploading...</span>
+                    </div>
+                `;
+                uploadList.appendChild(uploadItem);
+
+                // Create a FormData instance for the folder upload
+                const formData = new FormData();
+                formData.append('folder_name', folderPath);
+                formData.append('extractMetadata', document.getElementById('extractMetadata').checked);
+                formData.append('description', document.getElementById('description').value);
+
+                // Count total files and track progress
+                const totalFiles = files.length;
+                let processedFiles = 0;
+
+                // Update progress bar
+                updateProgress(0, '0%');
+
+                // Add all files to the form data
+                for (let i = 0; i < files.length; i++) {
+                    formData.append('files[]', files[i]);
+                    formData.append('file_paths[]', files[i].webkitRelativePath);
+
+                    // Update progress for large folders
+                    if (i % 10 === 0 && totalFiles > 20) {
+                        const progress = Math.round((i / totalFiles) * 50); // First 50% for file preparation
+                        updateProgress(progress, `${progress}% (Preparing files...)`);
+                    }
+                }
+
+                // Set progress to 50% before sending
+                updateProgress(50, '50% (Uploading...)');
+
+                // Send the folder to the server
+                fetch('{{ url_for("document.upload_folder_ajax") }}', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => {
+                        // Set progress to 75% after server receives the data
+                        updateProgress(75, '75% (Processing...)');
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Set progress to 100% when complete
+                        updateProgress(100, '100% (Complete)');
+
+                        if (data.success) {
+                            uploadItem.className = 'alert alert-success d-flex justify-content-between align-items-center';
+                            uploadItem.innerHTML = `
+                            <div>
+                                <strong>Folder: ${folderPath}</strong> - Upload successful (${data.success_count} files processed, ${data.error_count} errors)
+                            </div>
+                            <div>
+                                <a href="{{ url_for('document.index') }}" class="btn btn-sm btn-primary">View Documents</a>
+                            </div>
+                        `;
+
+                            // Show details of processed files if available
+                            if (data.processed_files && data.processed_files.length > 0) {
+                                const detailsDiv = document.createElement('div');
+                                detailsDiv.className = 'mt-3';
+
+                                // Create collapsible details
+                                detailsDiv.innerHTML = `
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#folderDetails${Date.now()}" aria-expanded="false">
+                                    Show Details
+                                </button>
+                                <div class="collapse mt-2" id="folderDetails${Date.now()}">
+                                    <div class="card card-body">
+                                        <h6>Processed Files:</h6>
+                                        <ul class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                                            ${data.processed_files.map(file => `
+                                                <li class="list-group-item ${file.success ? 'list-group-item-success' : 'list-group-item-danger'}">
+                                                    ${file.name} - ${file.success ? 'Success' : `Error: ${file.error}`}
+                                                </li>
+                                            `).join('')}
+                                        </ul>
+                                    </div>
+                                </div>
+                            `;
+
+                                uploadItem.appendChild(detailsDiv);
+                            }
+                        } else {
+                            uploadItem.className = 'alert alert-danger d-flex justify-content-between align-items-center';
+                            uploadItem.innerHTML = `
+                            <div>
+                                <strong>Folder: ${folderPath}</strong> - ${data.error}
+                            </div>
+                            <div>
+                                <i class="bi bi-x-circle-fill"></i>
+                            </div>
+                        `;
+                        }
+                    })
+                    .catch(error => {
+                        // Set progress to error state
+                        setProgressError('Error');
+
+                        uploadItem.className = 'alert alert-danger d-flex justify-content-between align-items-center';
+                        uploadItem.innerHTML = `
+                        <div>
+                            <strong>Folder: ${folderPath}</strong> - Upload failed: ${error.message || 'Unknown error'}
+                        </div>
+                        <div>
+                            <i class="bi bi-x-circle-fill"></i>
+                        </div>
+                    `;
+                        console.error('Error:', error);
+                    });
+            }
+        }
+
+        function handleFiles(files) {
+            if (files.length > 0 && uploadProgress) {
+                uploadProgress.style.display = 'block';
+
+                // Check if this is a folder upload
+                if (files[0].webkitRelativePath) {
+                    handleFolderDrop(files);
+                    return;
+                }
+
+                // Create upload items in the list
+                Array.from(files).forEach(file => {
+                    uploadFile(file);
+                });
+            }
+        }
+
+        function uploadFile(file) {
+            // Create a new FormData instance
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('extractMetadata', document.getElementById('extractMetadata').checked);
+            formData.append('description', document.getElementById('description').value);
+
+            // Create upload item in the list
+            const uploadItem = document.createElement('div');
+            uploadItem.className = 'alert alert-info d-flex justify-content-between align-items-center';
+            uploadItem.innerHTML = `
+                <div>
+                    <strong>${file.name}</strong> (${formatFileSize(file.size)})
+                </div>
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Uploading...</span>
+                </div>
+            `;
+            if (uploadList) {
+                uploadList.appendChild(uploadItem);
+            }
+
+            // Send the file to the server
+            fetch('{{ url_for("document.upload_ajax") }}', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        uploadItem.className = 'alert alert-success d-flex justify-content-between align-items-center';
+                        uploadItem.innerHTML = `
+                        <div>
+                            <strong>${file.name}</strong> - Upload successful
+                        </div>
+                        <div>
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                    `;
+                    } else {
+                        uploadItem.className = 'alert alert-danger d-flex justify-content-between align-items-center';
+                        uploadItem.innerHTML = `
+                        <div>
+                            <strong>${file.name}</strong> - ${data.error}
+                        </div>
+                        <div>
+                            <i class="bi bi-x-circle-fill"></i>
+                        </div>
+                    `;
+                    }
+                })
+                .catch(error => {
+                    uploadItem.className = 'alert alert-danger d-flex justify-content-between align-items-center';
+                    uploadItem.innerHTML = `
+                    <div>
+                        <strong>${file.name}</strong> - Upload failed
+                    </div>
+                    <div>
+                        <i class="bi bi-x-circle-fill"></i>
+                    </div>
+                `;
+                    console.error('Error:', error);
+                });
+        }
+    });
+
+    // 전역 함수로 toggleFolder 정의
+    window.toggleFolder = toggleFolder;
+</script>
+{% endblock %}

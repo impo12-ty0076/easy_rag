@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+
+{% block title %}Easy RAG System - System Diagnostics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>System Diagnostics</h1>
+            <div>
+                <a href="{{ url_for('settings.run_diagnostics') }}" class="btn btn-primary">
+                    <i class="bi bi-play-circle"></i> Run Diagnostics
+                </a>
+                <a href="{{ url_for('settings.index') }}" class="btn btn-secondary ms-2">
+                    <i class="bi bi-gear"></i> Back to Settings
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Health Status -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h2>System Health Status</h2>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <h3 class="me-3">Status: </h3>
+                    {% if health_status == 'healthy' %}
+                        <span class="badge bg-success fs-5">Healthy</span>
+                    {% elif health_status == 'warning' %}
+                        <span class="badge bg-warning fs-5">Warning</span>
+                    {% else %}
+                        <span class="badge bg-danger fs-5">Critical</span>
+                    {% endif %}
+                </div>
+                
+                {% if health_issues %}
+                    <h4>Issues Detected:</h4>
+                    <ul class="list-group mb-3">
+                        {% for issue in health_issues %}
+                            <li class="list-group-item list-group-item-warning">{{ issue }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="alert alert-success">
+                        No issues detected. System is operating normally.
+                    </div>
+                {% endif %}
+                
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">CPU Usage</h5>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar {% if resources.cpu_percent > 90 %}bg-danger{% elif resources.cpu_percent > 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" style="width: {{ resources.cpu_percent }}%;" 
+                                         aria-valuenow="{{ resources.cpu_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                        {{ resources.cpu_percent }}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Memory Usage</h5>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar {% if resources.memory_percent > 90 %}bg-danger{% elif resources.memory_percent > 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" style="width: {{ resources.memory_percent }}%;" 
+                                         aria-valuenow="{{ resources.memory_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                        {{ resources.memory_percent }}%
+                                    </div>
+                                </div>
+                                <small>{{ (resources.memory_used / (1024 * 1024 * 1024)) | round(2) }} GB / {{ (resources.memory_total / (1024 * 1024 * 1024)) | round(2) }} GB</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Disk Usage</h5>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar {% if resources.disk_percent > 90 %}bg-danger{% elif resources.disk_percent > 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                                         role="progressbar" style="width: {{ resources.disk_percent }}%;" 
+                                         aria-valuenow="{{ resources.disk_percent }}" aria-valuemin="0" aria-valuemax="100">
+                                        {{ resources.disk_percent }}%
+                                    </div>
+                                </div>
+                                <small>{{ (resources.disk_used / (1024 * 1024 * 1024)) | round(2) }} GB / {{ (resources.disk_total / (1024 * 1024 * 1024)) | round(2) }} GB</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h2>System Information</h2>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tbody>
+                        <tr>
+                            <th>Platform</th>
+                            <td>{{ system_info.platform }}</td>
+                        </tr>
+                        <tr>
+                            <th>Operating System</th>
+                            <td>{{ system_info.system }}</td>
+                        </tr>
+                        <tr>
+                            <th>Release</th>
+                            <td>{{ system_info.release }}</td>
+                        </tr>
+                        <tr>
+                            <th>Version</th>
+                            <td>{{ system_info.version }}</td>
+                        </tr>
+                        <tr>
+                            <th>Machine</th>
+                            <td>{{ system_info.machine }}</td>
+                        </tr>
+                        <tr>
+                            <th>Processor</th>
+                            <td>{{ system_info.processor }}</td>
+                        </tr>
+                        <tr>
+                            <th>Hostname</th>
+                            <td>{{ system_info.hostname }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h2>Python Environment</h2>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tbody>
+                        <tr>
+                            <th>Python Version</th>
+                            <td>{{ python_info.version }}</td>
+                        </tr>
+                        <tr>
+                            <th>Executable</th>
+                            <td>{{ python_info.executable }}</td>
+                        </tr>
+                        <tr>
+                            <th>Pip Version</th>
+                            <td>{{ python_info.pip_version }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h2>Database Status</h2>
+            </div>
+            <div class="card-body">
+                {% if database_health.connected %}
+                    <div class="alert alert-success mb-3">
+                        Database is connected and operational
+                    </div>
+                {% else %}
+                    <div class="alert alert-danger mb-3">
+                        Database connection failed
+                    </div>
+                {% endif %}
+                
+                <table class="table">
+                    <tbody>
+                        <tr>
+                            <th>Location</th>
+                            <td>{{ database_health.location }}</td>
+                        </tr>
+                        <tr>
+                            <th>Size</th>
+                            <td>{{ database_health.size | filesizeformat }}</td>
+                        </tr>
+                        <tr>
+                            <th>Tables</th>
+                            <td>{{ database_health.tables | join(', ') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                {% if database_health.errors %}
+                    <h5 class="mt-3">Errors:</h5>
+                    <ul class="list-group">
+                        {% for error in database_health.errors %}
+                            <li class="list-group-item list-group-item-danger">{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h2>Storage Status</h2>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tbody>
+                        <tr>
+                            <th>Upload Folder Size</th>
+                            <td>{{ storage_health.upload_folder_size | filesizeformat }}</td>
+                        </tr>
+                        <tr>
+                            <th>Vector DB Folder Size</th>
+                            <td>{{ storage_health.vector_db_folder_size | filesizeformat }}</td>
+                        </tr>
+                        <tr>
+                            <th>Log Folder Size</th>
+                            <td>{{ storage_health.log_folder_size | filesizeformat }}</td>
+                        </tr>
+                        <tr>
+                            <th>Free Disk Space</th>
+                            <td>{{ storage_health.disk_space_free | filesizeformat }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h2>Core Dependencies</h2>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Package</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for package, installed in core_deps.items() %}
+                        <tr>
+                            <td>{{ package }}</td>
+                            <td>
+                                {% if installed %}
+                                <span class="badge bg-success">Installed</span>
+                                {% else %}
+                                <span class="badge bg-danger">Missing</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h2>Installation History</h2>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Package</th>
+                            <th>Version</th>
+                            <th>Status</th>
+                            <th>Message</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in installation_history %}
+                        <tr>
+                            <td>{{ entry.package }}</td>
+                            <td>{{ entry.version }}</td>
+                            <td>
+                                {% if entry.success %}
+                                <span class="badge bg-success">Success</span>
+                                {% else %}
+                                <span class="badge bg-danger">Failed</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ entry.message }}</td>
+                            <td>{{ entry.timestamp|datetime }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h2>Error Logs</h2>
+            </div>
+            <div class="card-body">
+                {% if error_logs %}
+                <div class="bg-dark text-light p-3" style="max-height: 400px; overflow-y: auto;">
+                    {% for log in error_logs %}
+                    <div class="mb-2">{{ log }}</div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    No error logs found
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

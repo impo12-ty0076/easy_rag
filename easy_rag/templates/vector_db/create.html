@@ -1,0 +1,566 @@
+{% extends 'base.html' %}
+
+{% block title %}Easy RAG System - Create Vector Database{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2>Create Vector Database</h2>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info alert-permanent">
+                    <p>Creating a vector database involves several steps:</p>
+                    <ol>
+                        <li>Select documents or folders to include</li>
+                        <li>Configure text splitting</li>
+                        <li>Select an embedding model</li>
+                        <li>Choose a vector store</li>
+                    </ol>
+                </div>
+
+                <form id="createVectorDBForm" method="post" action="{{ url_for('vector_db.create') }}">
+                    <!-- Step 1: Document/Folder Selection -->
+                    <div class="mb-4">
+                        <h4>Step 1: Select Documents or Folders</h4>
+                        <div class="alert alert-light alert-permanent border">
+                            <p>Select the documents or folders you want to include in your vector database:</p>
+
+                            <ul class="nav nav-tabs mb-3" id="selectionTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab" aria-controls="documents" aria-selected="true">Documents</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="folders-tab" data-bs-toggle="tab" data-bs-target="#folders" type="button" role="tab" aria-controls="folders" aria-selected="false">Folders & Files</button>
+                                </li>
+                            </ul>
+                            
+                            <div class="tab-content" id="selectionTabsContent">
+                                <!-- Documents Tab -->
+                                <div class="tab-pane fade show active" id="documents" role="tabpanel" aria-labelledby="documents-tab">
+                                    {% if documents %}
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 50px;">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="selectAllDocuments">
+                                                        </div>
+                                                    </th>
+                                                    <th>Name</th>
+                                                    <th>Type</th>
+                                                    <th>Size</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for document in documents %}
+                                                <tr>
+                                                    <td>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input document-checkbox" type="checkbox" name="document_ids" value="{{ document.id }}" id="document{{ document.id }}" data-extension="{{ document.type }}">
+                                                        </div>
+                                                    </td>
+                                                    <td>{{ document.name }}</td>
+                                                    <td>{{ document.type }}</td>
+                                                    <td>{{ document.size | filesizeformat }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-warning alert-permanent">
+                                        <p>No documents available. Please <a href="{{ url_for('document.upload') }}">upload documents</a> first or use the Folders & Files tab.</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Folders & Files Tab -->
+                                <div class="tab-pane fade" id="folders" role="tabpanel" aria-labelledby="folders-tab">
+                                    <div class="mb-3">
+                                        <label class="form-label">Available Folders:</label>
+                                        <div class="list-group">
+                                            {% if folders %}
+                                                {% for folder in folders %}
+                                                <div class="list-group-item">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input folder-radio" type="radio" name="folder_path" value="{{ folder.path }}" id="folder{{ loop.index }}">
+                                                        <label class="form-check-label" for="folder{{ loop.index }}">
+                                                            <i class="bi bi-folder"></i> {{ folder.name }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            {% endif %}
+                                            
+                                            {% if files %}
+                                                <div class="list-group-item list-group-item-secondary">
+                                                    <strong>Individual Files:</strong>
+                                                </div>
+                                                {% for file in files %}
+                                                <div class="list-group-item">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input file-checkbox" type="checkbox" name="file_paths" value="{{ file.path }}" id="file{{ loop.index }}" data-extension="{{ file.extension }}">
+                                                        <label class="form-check-label" for="file{{ loop.index }}">
+                                                            <i class="bi bi-file-earmark"></i> {{ file.name }} <small class="text-muted">({{ file.size | filesizeformat }})</small>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            {% endif %}
+                                            
+                                            {% if not folders and not files %}
+                                                <div class="alert alert-warning alert-permanent">
+                                                    <p>No folders or files available in the upload directory.</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="documentSelectionError" class="text-danger mt-2" style="display: none;">
+                                Please select at least one document, folder, or file.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Document Loader Information (Hidden) -->
+                    <div id="loaderInfo" class="mb-4" style="display: none;">
+                        <div class="alert alert-info alert-permanent">
+                            <p>Document loaders will be automatically selected based on file types.</p>
+                            <div id="detectedExtensions" class="mb-3">
+                                <strong>Detected File Types:</strong> <span id="extensionsList">None</span>
+                            </div>
+                            <div id="loaderContainer" style="display: none;"></div>
+                            <!-- Hidden inputs for loaders will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Continue button -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('vector_db.index') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="button" id="continueButton" class="btn btn-primary">Continue to Text Splitting</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dependency Installation Modal -->
+<div class="modal fade" id="dependencyModal" tabindex="-1" aria-labelledby="dependencyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dependencyModalLabel">Installing Dependencies</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Installing required dependencies for <span id="loaderName"></span>:</p>
+                <ul id="packageList"></ul>
+                <div class="progress mt-3">
+                    <div id="installProgress" class="progress-bar progress-bar-striped progress-bar-animated"
+                        role="progressbar" style="width: 0%"></div>
+                </div>
+                <div id="installStatus" class="mt-2"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Map of file extensions to loader IDs
+    const extensionToLoaderMap = {
+        '.txt': 'text',
+        '.pdf': 'pdf',
+        '.docx': 'docx',
+        '.csv': 'csv',
+        '.json': 'json',
+        '.md': 'markdown',
+        '.html': 'html',
+        '.htm': 'html'
+    };
+    
+    // Store all available loaders
+    let availableLoaders = [];
+    
+    // Store detected extensions
+    let detectedExtensions = new Set();
+    
+    document.addEventListener('DOMContentLoaded', function () {
+        // Select all documents checkbox
+        const selectAllCheckbox = document.getElementById('selectAllDocuments');
+        const documentCheckboxes = document.querySelectorAll('.document-checkbox');
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function () {
+                documentCheckboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+                updateDetectedExtensions();
+            });
+        }
+        
+        // Add event listeners to document checkboxes
+        documentCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateDetectedExtensions);
+        });
+        
+        // Add event listeners to file checkboxes
+        const fileCheckboxes = document.querySelectorAll('.file-checkbox');
+        fileCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateDetectedExtensions);
+        });
+        
+        // Add event listeners to folder radio buttons
+        const folderRadios = document.querySelectorAll('.folder-radio');
+        folderRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                // When a folder is selected, uncheck all file checkboxes
+                fileCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                updateDetectedExtensions();
+            });
+        });
+        
+        // Tab change event
+        const selectionTabs = document.querySelectorAll('#selectionTabs button');
+        selectionTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Reset selection when changing tabs
+                if (this.id === 'documents-tab') {
+                    // Uncheck all file checkboxes and unselect folder radios
+                    fileCheckboxes.forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                    folderRadios.forEach(radio => {
+                        radio.checked = false;
+                    });
+                } else if (this.id === 'folders-tab') {
+                    // Uncheck all document checkboxes
+                    documentCheckboxes.forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.checked = false;
+                    }
+                }
+                updateDetectedExtensions();
+            });
+        });
+
+        // Load available document loaders
+        loadDocumentLoaders();
+
+        // Continue button click handler
+        const continueButton = document.getElementById('continueButton');
+        if (continueButton) {
+            continueButton.addEventListener('click', function () {
+                if (validateForm()) {
+                    // Store the selected values in session storage
+                    const selectedDocuments = Array.from(document.querySelectorAll('.document-checkbox:checked')).map(cb => cb.value);
+                    const selectedFolder = document.querySelector('.folder-radio:checked')?.value || '';
+                    const selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
+
+                    sessionStorage.setItem('selectedDocuments', JSON.stringify(selectedDocuments));
+                    sessionStorage.setItem('selectedFolder', selectedFolder);
+                    sessionStorage.setItem('selectedFiles', JSON.stringify(selectedFiles));
+
+                    // Submit the form
+                    document.getElementById('createVectorDBForm').submit();
+                }
+            });
+        }
+        
+        // Initial update of detected extensions
+        updateDetectedExtensions();
+    });
+
+    function validateForm() {
+        let isValid = true;
+
+        // Validate document/folder/file selection
+        const selectedDocuments = document.querySelectorAll('.document-checkbox:checked');
+        const selectedFolder = document.querySelector('.folder-radio:checked');
+        const selectedFiles = document.querySelectorAll('.file-checkbox:checked');
+        const documentSelectionError = document.getElementById('documentSelectionError');
+
+        if (selectedDocuments.length === 0 && !selectedFolder && selectedFiles.length === 0) {
+            documentSelectionError.style.display = 'block';
+            isValid = false;
+        } else {
+            documentSelectionError.style.display = 'none';
+        }
+        
+        // Add hidden inputs for all required loaders
+        addRequiredLoaderInputs();
+
+        return isValid;
+    }
+    
+    function updateDetectedExtensions() {
+        detectedExtensions.clear();
+        
+        // Get extensions from selected documents
+        document.querySelectorAll('.document-checkbox:checked').forEach(checkbox => {
+            const extension = checkbox.dataset.extension;
+            if (extension) {
+                detectedExtensions.add(extension);
+            }
+        });
+        
+        // Get extensions from selected files
+        document.querySelectorAll('.file-checkbox:checked').forEach(checkbox => {
+            const extension = checkbox.dataset.extension;
+            if (extension) {
+                detectedExtensions.add(extension);
+            }
+        });
+        
+        // If a folder is selected, we'll need to handle this differently
+        // For now, we'll just show a message that all loaders might be needed
+        const selectedFolder = document.querySelector('.folder-radio:checked');
+        
+        // Update the UI
+        const extensionsList = document.getElementById('extensionsList');
+        if (detectedExtensions.size > 0) {
+            extensionsList.textContent = Array.from(detectedExtensions).join(', ');
+        } else if (selectedFolder) {
+            extensionsList.textContent = 'Folder selected - all supported file types will be processed';
+        } else {
+            extensionsList.textContent = 'None';
+        }
+        
+        // Update the loader selection UI
+        updateLoaderSelection();
+    }
+    
+    function updateLoaderSelection() {
+        if (!availableLoaders.length) return; // Wait until loaders are loaded
+        
+        // Get required loader IDs based on detected extensions
+        const requiredLoaderIds = new Set();
+        
+        detectedExtensions.forEach(ext => {
+            const loaderId = extensionToLoaderMap[ext];
+            if (loaderId) {
+                requiredLoaderIds.add(loaderId);
+            }
+        });
+        
+        // If a folder is selected, we might need all loaders
+        const selectedFolder = document.querySelector('.folder-radio:checked');
+        if (selectedFolder) {
+            Object.values(extensionToLoaderMap).forEach(loaderId => {
+                requiredLoaderIds.add(loaderId);
+            });
+        }
+        
+        // Check if any required loaders need installation
+        let needsInstallation = false;
+        availableLoaders.forEach(loader => {
+            if (requiredLoaderIds.has(loader.id) && !loader.is_available) {
+                needsInstallation = true;
+            }
+        });
+        
+        // Show loader info if installation is needed
+        if (needsInstallation) {
+            document.getElementById('loaderInfo').style.display = 'block';
+            
+            // Clear and populate the loader container
+            const loaderContainer = document.getElementById('loaderContainer');
+            loaderContainer.style.display = 'block';
+            loaderContainer.innerHTML = '';
+            
+            // Add required loader cards that need installation
+            availableLoaders.forEach(loader => {
+                if (requiredLoaderIds.has(loader.id) && !loader.is_available) {
+                    addLoaderInstallCard(loaderContainer, loader);
+                }
+            });
+        } else {
+            document.getElementById('loaderInfo').style.display = 'none';
+        }
+    }
+    
+    function addLoaderInstallCard(container, loader) {
+        const card = document.createElement('div');
+        card.className = 'alert alert-warning';
+        
+        let extensionsHtml = '';
+        if (loader.supported_extensions && loader.supported_extensions.length > 0) {
+            extensionsHtml = `<p><small>Supports: ${loader.supported_extensions.join(', ')}</small></p>`;
+        }
+        
+        card.innerHTML = `
+            <h5>${loader.name} <span class="badge bg-warning float-end">Needs Installation</span></h5>
+            <p>${loader.description}</p>
+            ${extensionsHtml}
+            <button type="button" class="btn btn-warning" onclick="installDependencies('${loader.id}')">
+                Install Dependencies
+            </button>
+        `;
+        
+        container.appendChild(card);
+    }
+    
+    function addRequiredLoaderInputs() {
+        // Get required loader IDs based on detected extensions
+        const requiredLoaderIds = new Set();
+        
+        detectedExtensions.forEach(ext => {
+            const loaderId = extensionToLoaderMap[ext];
+            if (loaderId) {
+                requiredLoaderIds.add(loaderId);
+            }
+        });
+        
+        // If a folder is selected, we might need all loaders
+        const selectedFolder = document.querySelector('.folder-radio:checked');
+        if (selectedFolder) {
+            Object.values(extensionToLoaderMap).forEach(loaderId => {
+                requiredLoaderIds.add(loaderId);
+            });
+        }
+        
+        // Remove existing loader inputs
+        document.querySelectorAll('input[name="loader_ids"]').forEach(input => {
+            input.remove();
+        });
+        
+        // Add hidden inputs for required loaders
+        const form = document.getElementById('createVectorDBForm');
+        availableLoaders.forEach(loader => {
+            if (requiredLoaderIds.has(loader.id) && loader.is_available) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'loader_ids';
+                input.value = loader.id;
+                form.appendChild(input);
+            }
+        });
+    }
+
+    function loadDocumentLoaders() {
+        const loaderContainer = document.getElementById('loaderContainer');
+
+        fetch("{{ url_for('vector_db.get_loaders') }}")
+            .then(response => response.json())
+            .then(data => {
+                // Store all loaders
+                availableLoaders = data.loaders;
+                
+                // Update the loader selection based on detected extensions
+                updateLoaderSelection();
+            })
+            .catch(error => {
+                console.error('Error loading document loaders:', error);
+                loaderContainer.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-danger alert-permanent">
+                            Error loading document loaders. Please try refreshing the page.
+                        </div>
+                    </div>
+                `;
+            });
+    }
+
+    function installDependencies(loaderId) {
+        // Confirm with user before installing dependencies
+        if (!confirm("After installing dependencies, the page will be reloaded to apply changes. Do you want to continue?")) {
+            return; // User cancelled
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('dependencyModal'));
+        modal.show();
+
+        // Get loader info
+        fetch(`{{ url_for('vector_db.get_loader_info') }}?loader_id=${loaderId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loaderName').textContent = data.name;
+
+                const packageList = document.getElementById('packageList');
+                packageList.innerHTML = '';
+                data.required_packages.forEach(pkg => {
+                    const li = document.createElement('li');
+                    li.textContent = pkg;
+                    packageList.appendChild(li);
+                });
+
+                // Start installation
+                document.getElementById('installProgress').style.width = '0%';
+                document.getElementById('installStatus').textContent = 'Starting installation...';
+
+                // Install dependencies
+                fetch("{{ url_for('vector_db.install_dependencies') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ loader_id: loaderId })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById('installProgress').style.width = '100%';
+                            document.getElementById('installStatus').textContent = 'Installation complete! Page will reload in 3 seconds...';
+
+                            // Reload the entire page after a short delay
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 3000);
+                        } else {
+                            document.getElementById('installProgress').style.width = '100%';
+                            document.getElementById('installProgress').classList.remove('bg-primary');
+                            document.getElementById('installProgress').classList.add('bg-danger');
+                            document.getElementById('installStatus').textContent = `Installation failed: ${data.error}`;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error installing dependencies:', error);
+                        document.getElementById('installProgress').style.width = '100%';
+                        document.getElementById('installProgress').classList.remove('bg-primary');
+                        document.getElementById('installProgress').classList.add('bg-danger');
+                        document.getElementById('installStatus').textContent = 'Installation failed due to an error.';
+                    });
+            })
+            .catch(error => {
+                console.error('Error getting loader info:', error);
+                document.getElementById('installStatus').textContent = 'Error getting loader information.';
+            });
+    }
+</script>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    .card {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .card.border-primary {
+        border-width: 2px;
+    }
+    
+    .card.border-danger {
+        border-width: 2px;
+    }
+</style>
+{% endblock %}

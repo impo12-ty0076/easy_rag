@@ -1,0 +1,156 @@
+2025-07-18 10:27:48,823 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:29:11,198 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:29:12,412 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:29:44,467 ERROR: Unhandled Exception: (sqlite3.OperationalError) no such table: document
+[SQL: SELECT document.id AS document_id, document.path AS document_path, document.name AS document_name, document.type AS document_type, document.size AS document_size, document.last_modified AS document_last_modified, document.created_at AS document_created_at, document.doc_metadata AS document_doc_metadata 
+FROM document]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: document
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\flask\app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "D:\kiro_test\easy_rag\routes\document.py", line 110, in index
+    documents = Document.query.all()
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\query.py", line 2704, in all
+    return self._iter().all()  # type: ignore
+           ~~~~~~~~~~^^
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\query.py", line 2857, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+        params,
+        ^^^^^^^
+        execution_options={"_sa_orm_load_options": self.load_options},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\session.py", line 2365, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\session.py", line 2251, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1415, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\sql\elements.py", line 523, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1637, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1842, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1982, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 2351, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py", line 1963, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Admin\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\default.py", line 943, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such table: document
+[SQL: SELECT document.id AS document_id, document.path AS document_path, document.name AS document_name, document.type AS document_type, document.size AS document_size, document.last_modified AS document_last_modified, document.created_at AS document_created_at, document.doc_metadata AS document_doc_metadata 
+FROM document]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+ [in D:\kiro_test\easy_rag\errors.py:161]
+2025-07-18 10:31:05,116 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:31:15,076 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:31:15,968 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:33:48,931 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:34:43,901 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:34:43,911 ERROR: Error retrieving applied migrations: (sqlite3.OperationalError) no such table: migrations
+[SQL: SELECT id, name, applied_at FROM migrations ORDER BY applied_at]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in D:\kiro_test\easy_rag\utils\migrations.py:93]
+2025-07-18 10:36:56,102 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:36:56,108 ERROR: Error retrieving applied migrations: (sqlite3.OperationalError) no such table: migrations
+[SQL: SELECT id, name, applied_at FROM migrations ORDER BY applied_at]
+(Background on this error at: https://sqlalche.me/e/20/e3q8) [in D:\kiro_test\easy_rag\utils\migrations.py:93]
+2025-07-18 10:37:41,121 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:37:41,439 INFO: Created migrations table 'migrations' [in D:\kiro_test\easy_rag\utils\migrations.py:59]
+2025-07-18 10:38:06,693 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:38:07,744 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:39:15,783 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:39:16,839 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:52:20,156 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:52:20,998 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:53:06,169 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:53:20,494 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:53:37,007 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:53:59,867 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:54:24,660 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:56:18,347 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:56:37,948 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:57:09,848 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:59:19,941 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:59:20,829 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 10:59:32,247 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:00:49,743 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:01:07,167 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:01:17,513 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:01:31,757 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:01:50,105 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:02:35,708 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]
+2025-07-18 11:02:36,755 INFO: Easy RAG System startup [in D:\kiro_test\easy_rag\errors.py:154]

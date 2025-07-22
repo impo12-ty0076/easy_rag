@@ -1,0 +1,589 @@
+{% extends 'base.html' %}
+
+{% block title %}Easy RAG System - Documents{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2>Document Management</h2>
+                <div>
+                    <button class="btn btn-outline-secondary me-2" id="toggleViewBtn">
+                        <i class="bi bi-grid"></i> Toggle View
+                    </button>
+                    <a href="{{ url_for('document.upload') }}" class="btn btn-primary">Upload Document</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs mb-3" id="documentTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-docs" type="button" role="tab" aria-controls="all-docs" aria-selected="true">All Documents</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="folders-tab" data-bs-toggle="tab" data-bs-target="#folders-view" type="button" role="tab" aria-controls="folders-view" aria-selected="false">Folder Structure</button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="documentTabsContent">
+                    <!-- All Documents Tab -->
+                    <div class="tab-pane fade show active" id="all-docs" role="tabpanel" aria-labelledby="all-tab">
+                        {% if documents %}
+                        <div id="table-view">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Type</th>
+                                            <th>Size</th>
+                                            <th>Last Modified</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for document in documents %}
+                                        <tr>
+                                            <td>
+                                                {% if document.doc_metadata and document.doc_metadata.folder %}
+                                                <i class="bi bi-folder text-warning me-1"></i>
+                                                {% endif %}
+                                                {{ document.name }}
+                                            </td>
+                                            <td>{{ document.type }}</td>
+                                            <td>{{ document.size | filesizeformat }}</td>
+                                            <td>{{ document.last_modified.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('document.view', id=document.id) }}" class="btn btn-sm btn-info">View</a>
+                                                    <form action="{{ url_for('document.delete', id=document.id) }}" method="post" style="display: inline;">
+                                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('정말로 문서 \"{{ document.name }}\"을(를) 삭제하시겠습니까?')">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div id="grid-view" style="display: none;">
+                            <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+                                {% for document in documents %}
+                                <div class="col">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h5 class="card-title">
+                                                {% if document.type == '.pdf' %}
+                                                <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
+                                                {% elif document.type in ['.docx', '.doc'] %}
+                                                <i class="bi bi-file-earmark-word text-primary me-2"></i>
+                                                {% elif document.type in ['.xlsx', '.xls'] %}
+                                                <i class="bi bi-file-earmark-excel text-success me-2"></i>
+                                                {% elif document.type == '.txt' %}
+                                                <i class="bi bi-file-earmark-text text-secondary me-2"></i>
+                                                {% elif document.type == '.md' %}
+                                                <i class="bi bi-markdown text-info me-2"></i>
+                                                {% else %}
+                                                <i class="bi bi-file-earmark me-2"></i>
+                                                {% endif %}
+                                                {{ document.name }}
+                                            </h5>
+                                            <p class="card-text">
+                                                <small class="text-muted">
+                                                    {{ document.size | filesizeformat }} • 
+                                                    {{ document.last_modified.strftime('%Y-%m-%d') }}
+                                                </small>
+                                            </p>
+                                            {% if document.doc_metadata and document.doc_metadata.folder %}
+                                            <p class="card-text">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-folder"></i> 
+                                                    {{ document.doc_metadata.folder.name }}
+                                                    {% if document.doc_metadata.folder.parent_dirs %}
+                                                    / {{ document.doc_metadata.folder.parent_dirs }}
+                                                    {% endif %}
+                                                </small>
+                                            </p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="card-footer">
+                                            <div class="btn-group w-100" role="group">
+                                                <a href="{{ url_for('document.view', id=document.id) }}" class="btn btn-sm btn-info">View</a>
+                                                <form action="{{ url_for('document.delete', id=document.id) }}" method="post" style="display: inline; flex-grow: 1;">
+                                                    <button type="submit" class="btn btn-sm btn-danger w-100" onclick="return confirm('정말로 문서 \"{{ document.name }}\"을(를) 삭제하시겠습니까?')">Delete</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <p>No documents have been uploaded yet. Click the "Upload Document" button to add your first document.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Folder Structure Tab -->
+                    <div class="tab-pane fade" id="folders-view" role="tabpanel" aria-labelledby="folders-tab">
+                        {% if documents %}
+                        <div class="folder-structure">
+                            <div class="mb-3">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="folderSearch" placeholder="Search documents...">
+                                    <button class="btn btn-outline-secondary" type="button" id="expandAllBtn">Expand All</button>
+                                    <button class="btn btn-outline-secondary" type="button" id="collapseAllBtn">Collapse All</button>
+                                </div>
+                            </div>
+                            
+                            <div id="folderTree" class="folder-tree">
+                                <!-- Folder tree will be generated by JavaScript -->
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p>Loading folder structure...</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <p>No documents have been uploaded yet. Click the "Upload Document" button to add your first document.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    .folder-tree {
+        margin-left: 0;
+        padding-left: 0;
+    }
+    
+    .folder-tree ul {
+        list-style-type: none;
+        padding-left: 1.5rem;
+    }
+    
+    .folder-tree li {
+        margin: 0.5rem 0;
+    }
+    
+    .folder-name {
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+    
+    .folder-name:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    .folder-name.active {
+        background-color: rgba(13, 110, 253, 0.1);
+    }
+    
+    .folder-icon {
+        margin-right: 0.5rem;
+    }
+    
+    .file-item {
+        padding: 0.25rem 0.5rem;
+        margin-left: 1.5rem;
+        display: flex;
+        align-items: center;
+        border-radius: 0.25rem;
+    }
+    
+    .file-item:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    .file-icon {
+        margin-right: 0.5rem;
+    }
+    
+    .file-actions {
+        margin-left: auto;
+    }
+    
+    .collapsed > ul {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle between table and grid view
+        const toggleViewBtn = document.getElementById('toggleViewBtn');
+        const tableView = document.getElementById('table-view');
+        const gridView = document.getElementById('grid-view');
+        
+        if (toggleViewBtn && tableView && gridView) {
+            toggleViewBtn.addEventListener('click', function() {
+                if (tableView.style.display === 'none') {
+                    tableView.style.display = 'block';
+                    gridView.style.display = 'none';
+                    toggleViewBtn.innerHTML = '<i class="bi bi-grid"></i> Toggle View';
+                } else {
+                    tableView.style.display = 'none';
+                    gridView.style.display = 'block';
+                    toggleViewBtn.innerHTML = '<i class="bi bi-table"></i> Toggle View';
+                }
+            });
+        }
+        
+        // Generate folder structure
+        const folderTab = document.getElementById('folders-tab');
+        if (folderTab) {
+            folderTab.addEventListener('shown.bs.tab', function() {
+                generateFolderStructure();
+            });
+        }
+        
+        // Search functionality
+        const folderSearch = document.getElementById('folderSearch');
+        if (folderSearch) {
+            folderSearch.addEventListener('input', function() {
+                filterFolderStructure(this.value);
+            });
+        }
+        
+        // Expand/Collapse all buttons
+        const expandAllBtn = document.getElementById('expandAllBtn');
+        const collapseAllBtn = document.getElementById('collapseAllBtn');
+        
+        if (expandAllBtn) {
+            expandAllBtn.addEventListener('click', function() {
+                const folderItems = document.querySelectorAll('.folder-item');
+                folderItems.forEach(item => {
+                    item.classList.remove('collapsed');
+                });
+            });
+        }
+        
+        if (collapseAllBtn) {
+            collapseAllBtn.addEventListener('click', function() {
+                const folderItems = document.querySelectorAll('.folder-item');
+                folderItems.forEach(item => {
+                    item.classList.add('collapsed');
+                });
+            });
+        }
+        
+        function generateFolderStructure() {
+            const folderTree = document.getElementById('folderTree');
+            if (!folderTree) return;
+            
+            // Get all documents with folder metadata
+            const documents = {{ documents_dict|tojson|safe }};
+            
+            // Create folder structure
+            const folderStructure = {};
+            
+            // Add root folder
+            folderStructure['root'] = {
+                name: 'Root',
+                path: '',
+                files: [],
+                subfolders: {}
+            };
+            
+            // Process each document
+            documents.forEach(doc => {
+                if (doc.doc_metadata && doc.doc_metadata.folder) {
+                    const folder = doc.doc_metadata.folder;
+                    const folderPath = folder.parent_dirs || '';
+                    
+                    // Split path into parts
+                    const pathParts = folderPath.split('/').filter(part => part.trim() !== '');
+                    
+                    // Start from root
+                    let currentFolder = folderStructure['root'];
+                    
+                    // Create folder hierarchy
+                    let currentPath = '';
+                    pathParts.forEach(part => {
+                        currentPath = currentPath ? `${currentPath}/${part}` : part;
+                        
+                        if (!currentFolder.subfolders[part]) {
+                            currentFolder.subfolders[part] = {
+                                name: part,
+                                path: currentPath,
+                                files: [],
+                                subfolders: {}
+                            };
+                        }
+                        
+                        currentFolder = currentFolder.subfolders[part];
+                    });
+                    
+                    // Add file to the appropriate folder
+                    currentFolder.files.push(doc);
+                } else {
+                    // Add to root if no folder metadata
+                    folderStructure['root'].files.push(doc);
+                }
+            });
+            
+            // Render folder structure
+            folderTree.innerHTML = renderFolderStructure(folderStructure['root']);
+            
+            // Add click handlers for folders
+            const folderNames = document.querySelectorAll('.folder-name');
+            folderNames.forEach(folder => {
+                folder.addEventListener('click', function() {
+                    const folderItem = this.parentElement;
+                    folderItem.classList.toggle('collapsed');
+                });
+            });
+        }
+        
+        function renderFolderStructure(folder) {
+            let html = '<ul>';
+            
+            // Add subfolders
+            const subfoldersKeys = Object.keys(folder.subfolders);
+            subfoldersKeys.sort();
+            
+            subfoldersKeys.forEach(key => {
+                const subfolder = folder.subfolders[key];
+                html += `
+                    <li class="folder-item collapsed" data-path="${subfolder.path}">
+                        <div class="folder-name">
+                            <i class="bi bi-folder2 folder-icon text-warning"></i>
+                            <span>${subfolder.name}</span>
+                            <span class="badge bg-secondary ms-2">${countFilesInFolder(subfolder)}</span>
+                        </div>
+                        ${renderFolderStructure(subfolder)}
+                    </li>
+                `;
+            });
+            
+            // Add files
+            folder.files.sort((a, b) => a.name.localeCompare(b.name));
+            folder.files.forEach(file => {
+                let fileIcon = '';
+                if (file.type === '.pdf') {
+                    fileIcon = '<i class="bi bi-file-earmark-pdf text-danger file-icon"></i>';
+                } else if (file.type === '.docx' || file.type === '.doc') {
+                    fileIcon = '<i class="bi bi-file-earmark-word text-primary file-icon"></i>';
+                } else if (file.type === '.xlsx' || file.type === '.xls') {
+                    fileIcon = '<i class="bi bi-file-earmark-excel text-success file-icon"></i>';
+                } else if (file.type === '.txt') {
+                    fileIcon = '<i class="bi bi-file-earmark-text text-secondary file-icon"></i>';
+                } else if (file.type === '.md') {
+                    fileIcon = '<i class="bi bi-markdown text-info file-icon"></i>';
+                } else {
+                    fileIcon = '<i class="bi bi-file-earmark file-icon"></i>';
+                }
+                
+                html += `
+                    <li class="file-item" data-name="${file.name.toLowerCase()}">
+                        ${fileIcon}
+                        <span>${file.name}</span>
+                        <div class="file-actions">
+                            <a href="/documents/${file.id}" class="btn btn-sm btn-info">View</a>
+                            <form action="/documents/${file.id}/delete" method="post" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('정말로 삭제하시겠습니까?')">Delete</button>
+                            </form>
+                        </div>
+                    </li>
+                `;
+            });
+            
+            html += '</ul>';
+            return html;
+        }
+        
+        function countFilesInFolder(folder) {
+            let count = folder.files.length;
+            
+            Object.keys(folder.subfolders).forEach(key => {
+                count += countFilesInFolder(folder.subfolders[key]);
+            });
+            
+            return count;
+        }
+        
+        function filterFolderStructure(searchTerm) {
+            searchTerm = searchTerm.toLowerCase();
+            
+            const fileItems = document.querySelectorAll('.file-item');
+            const folderItems = document.querySelectorAll('.folder-item');
+            
+            // Reset visibility
+            fileItems.forEach(item => {
+                item.style.display = '';
+            });
+            
+            folderItems.forEach(item => {
+                item.style.display = '';
+                if (searchTerm) {
+                    item.classList.remove('collapsed');
+                } else {
+                    item.classList.add('collapsed');
+                }
+            });
+            
+            if (!searchTerm) return;
+            
+            // Filter files
+            fileItems.forEach(item => {
+                const fileName = item.getAttribute('data-name');
+                if (!fileName.includes(searchTerm)) {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // Hide empty folders
+            folderItems.forEach(item => {
+                const visibleFiles = item.querySelectorAll('.file-item[style="display: none;"]');
+                const visibleFolders = item.querySelectorAll('.folder-item[style="display: none;"]');
+                
+                if (visibleFiles.length === 0 && visibleFolders.length === 0) {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        // 모달 백드롭 정리 함수
+        function cleanupModalBackdrop() {
+            // 모든 모달 백드롭 제거
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => {
+                backdrop.remove();
+            });
+            
+            // body에서 modal-open 클래스 제거
+            document.body.classList.remove('modal-open');
+            
+            // body 스타일 초기화
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }
+        
+        // 삭제 폼 제출 시 모달 정리
+        document.addEventListener('submit', function(e) {
+            if (e.target.closest('.modal')) {
+                // 모달 내부의 폼이 제출될 때
+                setTimeout(cleanupModalBackdrop, 100);
+            }
+        });
+        
+        // 페이지 로드 시 남아있는 백드롭 정리
+        window.addEventListener('load', function() {
+            cleanupModalBackdrop();
+        });
+        
+        // 모달이 숨겨질 때 백드롭 정리
+        document.addEventListener('hidden.bs.modal', function(e) {
+            setTimeout(cleanupModalBackdrop, 100);
+        });
+        
+        // AJAX 삭제 기능
+        function deleteDocumentAjax(documentId, documentName, buttonElement) {
+            console.log('Delete function called:', documentId, documentName);
+            
+            if (!confirm(`정말로 문서 "${documentName}"을(를) 삭제하시겠습니까?`)) {
+                return;
+            }
+            
+            // 로딩 표시
+            const deleteBtn = buttonElement;
+            if (deleteBtn) {
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 삭제 중...';
+            }
+            
+            fetch(`/documents/${documentId}/delete?ajax=1`, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                console.log('Response received:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    // 성공 메시지 표시
+                    showAlert('success', data.message);
+                    
+                    // 해당 문서 행/카드 제거 - 더 안전한 방법으로 찾기
+                    const tableRow = deleteBtn.closest('tr');
+                    const gridCard = deleteBtn.closest('.col');
+                    const fileItem = deleteBtn.closest('.file-item');
+                    
+                    if (tableRow) {
+                        tableRow.remove();
+                    }
+                    if (gridCard) {
+                        gridCard.remove();
+                    }
+                    if (fileItem) {
+                        fileItem.remove();
+                    }
+                    
+                    cleanupModalBackdrop();
+                } else {
+                    showAlert('danger', data.error);
+                    
+                    // 버튼 복원
+                    if (deleteBtn) {
+                        deleteBtn.disabled = false;
+                        deleteBtn.innerHTML = 'Delete';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('삭제 오류:', error);
+                showAlert('danger', '문서 삭제 중 오류가 발생했습니다.');
+                
+                // 버튼 복원
+                if (deleteBtn) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = 'Delete';
+                }
+            });
+        }
+        
+        // 알림 메시지 표시 함수
+        function showAlert(type, message) {
+            const alertContainer = document.querySelector('.card-body');
+            if (!alertContainer) return;
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            alertContainer.insertBefore(alertDiv, alertContainer.firstChild);
+            
+            // 5초 후 자동 제거
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+    });
+</script>
+{% endblock %}

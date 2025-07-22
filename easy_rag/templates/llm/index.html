@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+
+{% block title %}Select LLM{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .llm-card {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 2px solid transparent;
+        height: 100%;
+    }
+    .llm-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .llm-card.selected {
+        border-color: #0d6efd;
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+    .llm-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #0d6efd;
+    }
+    .category-header {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .unavailable {
+        opacity: 0.6;
+    }
+    .badge-container {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+    .model-info {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
+    .download-progress {
+        margin-top: 10px;
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('query.index') }}">Query</a></li>
+            <li class="breadcrumb-item active">Select LLM</li>
+        </ol>
+    </nav>
+
+    <h1>Select Language Model</h1>
+    <p class="lead">Choose a language model to use for generating responses to your queries.</p>
+
+    <form method="POST" action="{{ url_for('llm.configure') }}" id="llm-form">
+        <input type="hidden" id="llm_id" name="llm_id" value="{{ current_config.llm_id if current_config else '' }}">
+        
+        <div class="row">
+            <div class="col-md-8">
+                {% for category_name, category_llms in categorized_llms.items() %}
+                    <h4 class="category-header">{{ category_name|title }} Models</h4>
+                    <div class="row row-cols-1 row-cols-md-2 g-4 mb-4">
+                        {% for llm_id, llm_info in category_llms.items() %}
+                        <div class="col">
+                            <div class="card llm-card position-relative {% if current_config and current_config.llm_id == llm_id %}selected{% endif %} {% if not availability[llm_id] %}unavailable{% endif %}"
+                                 data-llm-id="{{ llm_id }}"
+                                 data-requires-api-key="{{ llm_info.requires_api_key|lower }}"
+                                 data-api-key-name="{{ llm_info.api_key_name if llm_info.requires_api_key else '' }}"
+                                 data-download-required="{{ llm_info.download_required|default(false)|lower }}"
+                                 data-model-id="{{ llm_info.model_id if llm_info.download_required else '' }}"
+                                 data-quantization="{{ llm_info.quantization if llm_info.download_required else '' }}"
+                                 {% if not availability[llm_id] %}disabled{% endif %}>
+                                <div class="card-body">
+                                    <div class="badge-container">
+                                        {% if llm_info.requires_api_key %}
+                                            {% if availability[llm_id] %}
+                                                <span class="badge bg-success">API Key Available</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">API Key Required</span>
+                                            {% endif %}
+                                        {% elif llm_info.download_required %}
+                                            {% if availability[llm_id] %}
+                                                <span class="badge bg-success">Downloaded</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">Download Required</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="text-center mb-3">
+                                        <div class="llm-icon">
+                                            <i class="fas fa-{{ llm_info.icon }}"></i>
+                                        </div>
+                                        <h5 class="card-title">{{ llm_info.name }}</h5>
+                                    </div>
+                                    
+                                    <p class="card-text">{{ llm_info.description }}</p>
+                                    
+                                    <div class="model-info">
+                                        <span class="badge bg-info">Performance: {{ llm_info.performance }}</span>
+                                        <span class="badge bg-secondary">Latency: {{ llm_info.latency }}</span>
+                                        {% if llm_info.cost %}
+                                            <span class="badge bg-warning text-dark">Cost: {{ llm_info.cost }}</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if llm_info.ram_required %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">RAM Required: {{ llm_info.ram_required }}</small>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if llm_info.download_required and not availability[llm_id] %}
+                                    <div class="download-progress mt-2" id="progress-{{ llm_id }}">
+                                        <div class="progress">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                        <small class="text-muted mt-1 d-block">Downloading model...</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+                
+                <div class="mt-4 mb-5">
+                    <button type="submit" class="btn btn-primary" id="submit-btn">Select Model</button>
+                    <a href="{{ url_for('query.index') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">LLM Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>API-based models</strong> require an API key to be set in your .env file.
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="fas fa-download me-2"></i>
+                            <strong>Local models</strong> need to be downloaded before first use. This may take some time depending on your internet connection.
+                        </div>
+                        
+                        <h6 class="mt-4">Performance Comparison</h6>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Very High
+                                <span class="badge bg-primary rounded-pill">Best quality</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                High
+                                <span class="badge bg-info rounded-pill">Good quality</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Medium
+                                <span class="badge bg-success rounded-pill">Decent quality</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Low
+                                <span class="badge bg-warning text-dark rounded-pill">Basic quality</span>
+                            </li>
+                        </ul>
+                        
+                        <h6 class="mt-4">Setting API Keys</h6>
+                        <p class="small">To use API-based models, add your API keys to the <code>.env</code> file in the root directory of the application.</p>
+                        <pre class="bg-light p-2 small">OPENAI_API_KEY=your_key_here
+ANTHROPIC_API_KEY=your_key_here</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const llmIdInput = document.getElementById('llm_id');
+        const llmCards = document.querySelectorAll('.llm-card');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        // Function to update the UI based on the selected LLM
+        function updateLLMSelection(selectedId) {
+            // Update hidden input
+            llmIdInput.value = selectedId;
+            
+            // Update card selection
+            llmCards.forEach(card => {
+                if (card.dataset.llmId === selectedId) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
+            });
+        }
+        
+        // Initialize with current selection
+        if (llmIdInput.value) {
+            updateLLMSelection(llmIdInput.value);
+        }
+        
+        // Add click event to LLM cards
+        llmCards.forEach(card => {
+            // Skip if card is unavailable
+            if (card.classList.contains('unavailable')) {
+                return;
+            }
+            
+            card.addEventListener('click', function() {
+                const llmId = this.dataset.llmId;
+                updateLLMSelection(llmId);
+                
+                // Check if API key is required
+                if (this.dataset.requiresApiKey === 'true') {
+                    const apiKeyName = this.dataset.apiKeyName;
+                    
+                    // Check if API key is available
+                    fetch('{{ url_for("llm.check_api_key") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            api_key_name: apiKeyName
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.available) {
+                            alert(`API key ${apiKeyName} is required but not found in your .env file. Please add it and try again.`);
+                        }
+                    });
+                }
+                
+                // Check if download is required
+                if (this.dataset.downloadRequired === 'true') {
+                    const modelId = this.dataset.modelId;
+                    const quantization = this.dataset.quantization;
+                    const progressDiv = document.getElementById(`progress-${llmId}`);
+                    
+                    if (progressDiv) {
+                        // Show progress bar
+                        progressDiv.style.display = 'block';
+                        
+                        // Check download status
+                        fetch(`{{ url_for("llm.download_status", model_id="") }}${modelId}?quantization=${quantization}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.downloaded) {
+                                // Model is already downloaded
+                                progressDiv.style.display = 'none';
+                            } else {
+                                // Model needs to be downloaded
+                                // In a real implementation, this would poll the download status
+                                const progressBar = progressDiv.querySelector('.progress-bar');
+                                progressBar.style.width = '0%';
+                                
+                                // Simulate download progress
+                                let progress = 0;
+                                const interval = setInterval(() => {
+                                    progress += 10;
+                                    progressBar.style.width = `${progress}%`;
+                                    
+                                    if (progress >= 100) {
+                                        clearInterval(interval);
+                                        progressDiv.style.display = 'none';
+                                    }
+                                }, 500);
+                            }
+                        });
+                    }
+                }
+            });
+        });
+        
+        // Form submission
+        document.getElementById('llm-form').addEventListener('submit', function(e) {
+            if (!llmIdInput.value) {
+                e.preventDefault();
+                alert('Please select a language model');
+            }
+        });
+    });
+</script>
+{% endblock %}

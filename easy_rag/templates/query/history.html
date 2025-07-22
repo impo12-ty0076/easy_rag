@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Query History{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .query-item {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .query-item:hover {
+        background-color: #f8f9fa;
+    }
+    .query-text {
+        font-weight: 500;
+    }
+    .query-meta {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('query.index') }}">Query</a></li>
+            <li class="breadcrumb-item active">History</li>
+        </ol>
+    </nav>
+
+    <h1>Query History</h1>
+    <p class="lead">View your past queries and their responses.</p>
+
+    <div class="card">
+        <div class="card-body">
+            {% if queries %}
+            <div class="list-group">
+                {% for query in queries %}
+                <a href="{{ url_for('query.query_detail', query_id=query.id) }}" class="list-group-item list-group-item-action query-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1 query-text">{{ query.query|truncate(100) }}</h5>
+                        <small>{{ query.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center query-meta">
+                        <div>
+                            <span class="badge bg-primary me-2">{{ query.llm_used }}</span>
+                            <span class="badge bg-secondary">{{ query.retriever_used }}</span>
+                        </div>
+                        <small>{{ query.response|length }} chars response</small>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No queries found. Start asking questions in the <a href="{{ url_for('query.index') }}">Query Interface</a>.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

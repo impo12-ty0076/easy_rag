@@ -1,0 +1,427 @@
+{% extends 'base.html' %}
+
+{% block title %}Query Interface{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+    .query-container {
+        margin-bottom: 2rem;
+    }
+    .response-container {
+        display: none;
+        margin-top: 2rem;
+    }
+    .context-container {
+        margin-top: 1.5rem;
+    }
+    .context-item {
+        background-color: #f8f9fa;
+        border-radius: 0.25rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #0d6efd;
+    }
+    .context-source {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+    .context-text {
+        white-space: pre-wrap;
+    }
+    .context-score {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .config-badge {
+        margin-right: 0.5rem;
+    }
+    .llm-info {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .llm-icon {
+        font-size: 1.5rem;
+        margin-right: 0.5rem;
+        color: #0d6efd;
+    }
+    .recent-query {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .recent-query:hover {
+        background-color: #f8f9fa;
+    }
+    .loading-spinner {
+        display: none;
+        margin-top: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Query Interface</h1>
+    <p class="lead">Ask questions about your documents using the selected vector database and language model.</p>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Query Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="vector_db_id" class="form-label">Vector Database</label>
+                                <select class="form-select" id="vector_db_id" name="vector_db_id">
+                                    <option value="">Select a vector database</option>
+                                    {% for db in vector_dbs %}
+                                    <option value="{{ db.id }}">{{ db.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="llm_display" class="form-label">Language Model</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="llm_display" readonly
+                                           value="{{ current_config.name if current_config else 'No LLM selected' }}">
+                                    <a href="{{ url_for('llm.index') }}" class="btn btn-outline-primary">Select LLM</a>
+                                </div>
+                                <input type="hidden" id="llm_id" name="llm_id" 
+                                       value="{{ current_config.llm_id if current_config else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="retriever-info" class="mb-3" style="display: none;">
+                        <label class="form-label">Retriever Configuration</label>
+                        <div id="retriever-badges" class="d-flex flex-wrap">
+                            <span class="badge bg-primary config-badge" id="retriever-type-badge">Similarity Search</span>
+                            <span class="badge bg-secondary config-badge" id="chunk-count-badge">4 chunks</span>
+                            <span class="badge bg-info config-badge" id="reranking-badge">No Reranking</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Ask a Question</h5>
+                </div>
+                <div class="card-body">
+                    <form id="query-form">
+                        <div class="mb-3">
+                            <label for="query" class="form-label">Your Question</label>
+                            <textarea class="form-control" id="query" name="query" rows="3" placeholder="Enter your question here..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="submit-btn">Submit Question</button>
+                    </form>
+                    
+                    <div class="loading-spinner text-center" id="loading-spinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Processing your query...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="response-container" id="response-container">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Response</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="response-text" id="response-text"></div>
+                        
+                        <div class="context-container">
+                            <h6>Retrieved Context</h6>
+                            <div id="context-items"></div>
+                        </div>
+                        
+                        <div class="mt-3 text-end">
+                            <button class="btn btn-sm btn-outline-secondary" id="new-query-btn">
+                                <i class="fas fa-plus me-1"></i> New Query
+                            </button>
+                            <a href="{{ url_for('query.query_history') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-history me-1"></i> View History
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Queries</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_queries %}
+                    <ul class="list-group">
+                        {% for query in recent_queries %}
+                        <li class="list-group-item recent-query" data-query="{{ query.query }}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ query.query|truncate(50) }}</h6>
+                                <small>{{ query.timestamp.strftime('%H:%M') }}</small>
+                            </div>
+                            <small class="text-muted">{{ query.llm_used }}</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <div class="mt-3">
+                        <a href="{{ url_for('query.query_history') }}" class="btn btn-sm btn-outline-secondary">View All History</a>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No recent queries</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Query Tips</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><i class="fas fa-lightbulb me-2 text-warning"></i> Be specific in your questions</li>
+                        <li class="mb-2"><i class="fas fa-lightbulb me-2 text-warning"></i> Use clear, concise language</li>
+                        <li class="mb-2"><i class="fas fa-lightbulb me-2 text-warning"></i> Include key terms from your documents</li>
+                        <li class="mb-2"><i class="fas fa-lightbulb me-2 text-warning"></i> Try rephrasing if you don't get a good answer</li>
+                        <li class="mb-2"><i class="fas fa-lightbulb me-2 text-warning"></i> Adjust retriever settings for different results</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const queryForm = document.getElementById('query-form');
+        const vectorDbSelect = document.getElementById('vector_db_id');
+        const llmIdInput = document.getElementById('llm_id');
+        const submitBtn = document.getElementById('submit-btn');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const responseContainer = document.getElementById('response-container');
+        const responseText = document.getElementById('response-text');
+        const contextItems = document.getElementById('context-items');
+        const retrieverInfo = document.getElementById('retriever-info');
+        const retrieverTypeBadge = document.getElementById('retriever-type-badge');
+        const chunkCountBadge = document.getElementById('chunk-count-badge');
+        const rerankingBadge = document.getElementById('reranking-badge');
+        const recentQueries = document.querySelectorAll('.recent-query');
+        
+        // Load retriever configuration when vector database is selected
+        vectorDbSelect.addEventListener('change', function() {
+            const dbId = this.value;
+            
+            if (!dbId) {
+                retrieverInfo.style.display = 'none';
+                return;
+            }
+            
+            // Fetch retriever configuration from the server
+            fetch(`/retriever/parameters-for-db/${dbId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch retriever configuration');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Update retriever info display
+                    retrieverInfo.style.display = 'block';
+                    
+                    if (data.retriever_type) {
+                        retrieverTypeBadge.textContent = data.retriever_name || data.retriever_type;
+                    } else {
+                        retrieverTypeBadge.textContent = 'Similarity Search';
+                    }
+                    
+                    if (data.advanced_options && data.advanced_options.chunk_count) {
+                        chunkCountBadge.textContent = `${data.advanced_options.chunk_count} chunks`;
+                    } else {
+                        chunkCountBadge.textContent = '4 chunks';
+                    }
+                    
+                    if (data.advanced_options && data.advanced_options.reranking_llm && data.advanced_options.reranking_llm !== 'none') {
+                        rerankingBadge.textContent = data.reranking_name || 'Reranking Enabled';
+                    } else {
+                        rerankingBadge.textContent = 'No Reranking';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching retriever configuration:', error);
+                    // Show default values if fetch fails
+                    retrieverInfo.style.display = 'block';
+                    retrieverTypeBadge.textContent = 'Similarity Search';
+                    chunkCountBadge.textContent = '4 chunks';
+                    rerankingBadge.textContent = 'No Reranking';
+                });
+        });
+        
+        // Handle form submission
+        queryForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const query = document.getElementById('query').value.trim();
+            const vectorDbId = vectorDbSelect.value;
+            const llmId = llmIdInput.value;
+            
+            if (!query) {
+                alert('Please enter a question');
+                return;
+            }
+            
+            if (!vectorDbId) {
+                alert('Please select a vector database');
+                return;
+            }
+            
+            if (!llmId) {
+                alert('Please select a language model');
+                return;
+            }
+            
+            // Show loading spinner
+            submitBtn.disabled = true;
+            loadingSpinner.style.display = 'block';
+            responseContainer.style.display = 'none';
+            
+            // Get retriever type from the badge (default to similarity if not available)
+            let retrieverType = 'similarity';
+            if (retrieverTypeBadge.textContent && retrieverTypeBadge.textContent !== 'Similarity Search') {
+                // This is a simplification - in a real implementation, we would store the actual retriever type ID
+                retrieverType = retrieverTypeBadge.textContent.toLowerCase().replace(' ', '_');
+            }
+            
+            // Send query to server
+            fetch('{{ url_for("query.process_query") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'query': query,
+                    'vector_db_id': vectorDbId,
+                    'llm_id': llmId,
+                    'retriever_type': retrieverType
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Error processing query');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Hide loading spinner
+                loadingSpinner.style.display = 'none';
+                submitBtn.disabled = false;
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Unknown error occurred');
+                }
+                
+                // Show response
+                responseContainer.style.display = 'block';
+                responseText.innerHTML = formatResponse(data.response);
+                
+                // Show context items
+                contextItems.innerHTML = '';
+                data.contexts.forEach(context => {
+                    const contextItem = document.createElement('div');
+                    contextItem.className = 'context-item';
+                    
+                    const contextSource = document.createElement('div');
+                    contextSource.className = 'context-source';
+                    contextSource.textContent = `Source: ${context.source}`;
+                    
+                    const contextText = document.createElement('div');
+                    contextText.className = 'context-text';
+                    contextText.textContent = context.text;
+                    
+                    const contextScore = document.createElement('div');
+                    contextScore.className = 'context-score';
+                    contextScore.textContent = `Relevance: ${(context.score * 100).toFixed(1)}%`;
+                    
+                    contextItem.appendChild(contextSource);
+                    contextItem.appendChild(contextText);
+                    contextItem.appendChild(contextScore);
+                    
+                    contextItems.appendChild(contextItem);
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loadingSpinner.style.display = 'none';
+                submitBtn.disabled = false;
+                
+                // Show error message in a more user-friendly way
+                responseContainer.style.display = 'block';
+                responseText.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <strong>Error:</strong> ${error.message || 'An error occurred while processing your query. Please try again.'}
+                    </div>
+                `;
+                contextItems.innerHTML = '';
+            });
+        });
+        
+        // Handle recent query clicks
+        recentQueries.forEach(query => {
+            query.addEventListener('click', function() {
+                document.getElementById('query').value = this.dataset.query;
+            });
+        });
+        
+        // Handle new query button click
+        const newQueryBtn = document.getElementById('new-query-btn');
+        if (newQueryBtn) {
+            newQueryBtn.addEventListener('click', function() {
+                // Clear the query input
+                document.getElementById('query').value = '';
+                
+                // Hide the response container
+                responseContainer.style.display = 'none';
+                
+                // Focus on the query input
+                document.getElementById('query').focus();
+            });
+        }
+        
+        // Format response text with line breaks and paragraphs
+        function formatResponse(text) {
+            if (!text) return '';
+            
+            // Replace newlines with HTML line breaks
+            return text.split('\n').map(line => {
+                // Skip empty lines
+                if (!line.trim()) return '<br>';
+                
+                // Check if line is a list item
+                if (line.trim().startsWith('- ') || line.trim().match(/^\d+\./)) {
+                    return `<div class="mb-1">${line}</div>`;
+                }
+                
+                // Regular paragraph
+                return `<p class="mb-2">${line}</p>`;
+            }).join('');
+        }
+    });
+</script>
+{% endblock %}

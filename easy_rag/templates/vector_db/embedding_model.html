@@ -1,0 +1,612 @@
+{% extends 'base.html' %}
+
+{% block title %}Easy RAG System - Embedding Model Selection{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2>Embedding Model Selection</h2>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info alert-permanent">
+                    <p>Embedding models convert text into numerical vectors that capture semantic meaning. These vectors are stored in a vector database for efficient similarity search.</p>
+                </div>
+                
+                <form id="embeddingModelForm" method="post" action="{{ url_for('vector_db.embedding_model') }}">
+                    <!-- Step 1: Embedding Model Selection -->
+                    <div class="mb-4">
+                        <h4>Step 1: Select Embedding Model</h4>
+                        <div class="alert alert-light alert-permanent border">
+                            <p>Choose an embedding model to convert your text chunks into vectors:</p>
+                            
+                            <div id="embeddingModelContainer" class="row row-cols-1 row-cols-md-2 g-4">
+                                <!-- Embedding models will be populated dynamically -->
+                                <div class="col-12">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <span class="ms-2">Loading available embedding models...</span>
+                                </div>
+                            </div>
+                            
+                            <input type="hidden" name="embedding_model_id" id="selectedEmbeddingModel">
+                            <div id="embeddingModelSelectionError" class="text-danger mt-2" style="display: none;">
+                                Please select an embedding model.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2: Vector Store Selection -->
+                    <div class="mb-4">
+                        <h4>Step 2: Select Vector Store</h4>
+                        <div class="alert alert-light alert-permanent border">
+                            <p>Choose a vector store to save your embeddings:</p>
+                            
+                            <div id="vectorStoreContainer" class="row row-cols-1 row-cols-md-2 g-4">
+                                <!-- Vector stores will be populated dynamically -->
+                                <div class="col-12">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <span class="ms-2">Loading available vector stores...</span>
+                                </div>
+                            </div>
+                            
+                            <input type="hidden" name="vector_store_id" id="selectedVectorStore">
+                            <div id="vectorStoreSelectionError" class="text-danger mt-2" style="display: none;">
+                                Please select a vector store.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3: Vector Database Name -->
+                    <div class="mb-4">
+                        <h4>Step 3: Name Your Vector Database</h4>
+                        <div class="alert alert-light alert-permanent border">
+                            <div class="mb-3">
+                                <label for="vectorDbName" class="form-label">Vector Database Name</label>
+                                <input type="text" class="form-control" id="vectorDbName" name="vector_db_name" placeholder="My Vector Database">
+                                <div class="form-text">
+                                    A descriptive name to identify this vector database.
+                                </div>
+                                <div id="vectorDbNameError" class="text-danger" style="display: none;">
+                                    Please enter a name for your vector database.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Continue button -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('vector_db.text_splitting') }}" class="btn btn-secondary">Back</a>
+                        <button type="button" id="createButton" class="btn btn-primary">Create Vector Database</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- API Key Modal -->
+<div class="modal fade" id="apiKeyModal" tabindex="-1" aria-labelledby="apiKeyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="apiKeyModalLabel">API Key Required</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>This embedding model requires an API key. Please follow these steps to add your API key:</p>
+                <ol>
+                    <li>Create a <span id="apiKeyService"></span> account if you don't have one already.</li>
+                    <li>Generate an API key from your account dashboard.</li>
+                    <li>Add the following line to your <code>.env</code> file in the project root:</li>
+                </ol>
+                <div class="bg-light p-2 rounded">
+                    <code id="apiKeyEnvVar"></code>
+                </div>
+                <p class="mt-3">After adding your API key, restart the application for the changes to take effect.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dependency Installation Modal -->
+<div class="modal fade" id="dependencyModal" tabindex="-1" aria-labelledby="dependencyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="dependencyModalLabel">Installing Dependencies</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Installing required dependencies for <span id="componentName"></span>:</p>
+                <ul id="packageList"></ul>
+                <div class="progress mt-3">
+                    <div id="installProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                </div>
+                <div id="installStatus" class="mt-2"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get stored values from session storage
+        const storedEmbeddingModel = sessionStorage.getItem('selectedEmbeddingModel');
+        const storedVectorStore = sessionStorage.getItem('selectedVectorStore');
+        const storedVectorDbName = sessionStorage.getItem('vectorDbName');
+        
+        // Set default values if available
+        if (storedVectorDbName) {
+            document.getElementById('vectorDbName').value = storedVectorDbName;
+        }
+        
+        // Load embedding models and vector stores
+        loadEmbeddingModels();
+        loadVectorStores();
+        
+        // Create button click handler
+        const createButton = document.getElementById('createButton');
+        createButton.addEventListener('click', function() {
+            if (validateForm()) {
+                // Store the selected values in session storage
+                const selectedEmbeddingModel = document.getElementById('selectedEmbeddingModel').value;
+                const selectedVectorStore = document.getElementById('selectedVectorStore').value;
+                const vectorDbName = document.getElementById('vectorDbName').value;
+                
+                sessionStorage.setItem('selectedEmbeddingModel', selectedEmbeddingModel);
+                sessionStorage.setItem('selectedVectorStore', selectedVectorStore);
+                sessionStorage.setItem('vectorDbName', vectorDbName);
+                
+                // Submit the form
+                document.getElementById('embeddingModelForm').submit();
+            }
+        });
+    });
+    
+    function validateForm() {
+        let isValid = true;
+        
+        // Validate embedding model selection
+        const selectedEmbeddingModel = document.getElementById('selectedEmbeddingModel').value;
+        const embeddingModelSelectionError = document.getElementById('embeddingModelSelectionError');
+        
+        if (!selectedEmbeddingModel) {
+            embeddingModelSelectionError.style.display = 'block';
+            isValid = false;
+        } else {
+            embeddingModelSelectionError.style.display = 'none';
+        }
+        
+        // Validate vector store selection
+        const selectedVectorStore = document.getElementById('selectedVectorStore').value;
+        const vectorStoreSelectionError = document.getElementById('vectorStoreSelectionError');
+        
+        if (!selectedVectorStore) {
+            vectorStoreSelectionError.style.display = 'block';
+            isValid = false;
+        } else {
+            vectorStoreSelectionError.style.display = 'none';
+        }
+        
+        // Validate vector database name
+        const vectorDbName = document.getElementById('vectorDbName').value.trim();
+        const vectorDbNameError = document.getElementById('vectorDbNameError');
+        
+        if (!vectorDbName) {
+            vectorDbNameError.style.display = 'block';
+            isValid = false;
+        } else {
+            vectorDbNameError.style.display = 'none';
+        }
+        
+        return isValid;
+    }
+    
+    function loadEmbeddingModels() {
+        const embeddingModelContainer = document.getElementById('embeddingModelContainer');
+        
+        fetch("{{ url_for('vector_db.get_embedding_models') }}")
+            .then(response => response.json())
+            .then(data => {
+                embeddingModelContainer.innerHTML = '';
+                
+                data.models.forEach(model => {
+                    const card = document.createElement('div');
+                    card.className = 'col';
+                    
+                    let badgeHtml = '';
+                    let cardClass = '';
+                    let disabledStatus = '';
+                    let installButton = '';
+                    let apiKeyButton = '';
+                    
+                    if (model.is_available) {
+                        badgeHtml = '<span class="badge bg-success float-end">Available</span>';
+                    } else if (model.api_key_error) {
+                        badgeHtml = '<span class="badge bg-warning float-end">API Key Required</span>';
+                        cardClass = 'border-warning';
+                        disabledStatus = 'disabled';
+                        apiKeyButton = `<button type="button" class="btn btn-sm btn-warning" onclick="showApiKeyModal('${model.id}', '${model.api_key_env}')">Add API Key</button>`;
+                    } else if (model.missing_packages.length > 0) {
+                        badgeHtml = '<span class="badge bg-warning float-end">Needs Installation</span>';
+                        cardClass = 'border-warning';
+                        disabledStatus = 'disabled';
+                        installButton = `<button type="button" class="btn btn-sm btn-warning" onclick="installDependencies('embedding', '${model.id}')">Install Dependencies</button>`;
+                    }
+                    
+                    card.innerHTML = `
+                        <div class="card h-100 ${cardClass}" onclick="selectEmbeddingModel('${model.id}', ${model.is_available})">
+                            <div class="card-body">
+                                <h5 class="card-title">${model.name} ${badgeHtml}</h5>
+                                <p class="card-text">${model.description}</p>
+                                <p class="card-text"><small>Dimensions: ${model.dimension}</small></p>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    ${installButton}
+                                    ${apiKeyButton}
+                                    <div class="form-check">
+                                        <input class="form-check-input embedding-model-radio" type="radio" name="embedding_model_radio" id="embeddingModel${model.id}" value="${model.id}" ${disabledStatus}>
+                                        <label class="form-check-label" for="embeddingModel${model.id}">
+                                            Select
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    embeddingModelContainer.appendChild(card);
+                });
+                
+                // Add event listeners to embedding model cards
+                document.querySelectorAll('.card').forEach(card => {
+                    card.addEventListener('click', function(e) {
+                        // Don't trigger if clicking on a button
+                        if (e.target.tagName === 'BUTTON') {
+                            return;
+                        }
+                        
+                        const radio = this.querySelector('.embedding-model-radio');
+                        if (radio && !radio.disabled) {
+                            radio.checked = true;
+                            document.getElementById('selectedEmbeddingModel').value = radio.value;
+                            
+                            // Remove selection from all cards
+                            document.querySelectorAll('.card').forEach(c => {
+                                c.classList.remove('border-primary');
+                            });
+                            
+                            // Add selection to this card
+                            this.classList.add('border-primary');
+                        }
+                    });
+                });
+                
+                // Set stored value if available
+                const storedEmbeddingModel = sessionStorage.getItem('selectedEmbeddingModel');
+                if (storedEmbeddingModel) {
+                    const radio = document.querySelector(`input[name="embedding_model_radio"][value="${storedEmbeddingModel}"]`);
+                    if (radio && !radio.disabled) {
+                        radio.checked = true;
+                        document.getElementById('selectedEmbeddingModel').value = storedEmbeddingModel;
+                        
+                        // Add selection to the card
+                        const card = radio.closest('.card');
+                        if (card) {
+                            card.classList.add('border-primary');
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading embedding models:', error);
+                embeddingModelContainer.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-danger">
+                            Error loading embedding models. Please try refreshing the page.
+                        </div>
+                    </div>
+                `;
+            });
+    }
+    
+    function loadVectorStores() {
+        const vectorStoreContainer = document.getElementById('vectorStoreContainer');
+        
+        fetch("{{ url_for('vector_db.get_vector_stores') }}")
+            .then(response => response.json())
+            .then(data => {
+                vectorStoreContainer.innerHTML = '';
+                
+                data.stores.forEach(store => {
+                    const card = document.createElement('div');
+                    card.className = 'col';
+                    
+                    let badgeHtml = '';
+                    let cardClass = '';
+                    let disabledStatus = '';
+                    let installButton = '';
+                    
+                    if (store.is_available) {
+                        badgeHtml = '<span class="badge bg-success float-end">Available</span>';
+                    } else {
+                        badgeHtml = '<span class="badge bg-warning float-end">Needs Installation</span>';
+                        cardClass = 'border-warning';
+                        disabledStatus = 'disabled';
+                        installButton = `<button type="button" class="btn btn-sm btn-warning" onclick="installDependencies('vector-store', '${store.id}')">Install Dependencies</button>`;
+                    }
+                    
+                    let metadataSupport = '';
+                    if (store.supports_metadata) {
+                        metadataSupport = '<span class="badge bg-info me-2">Supports Metadata</span>';
+                    }
+                    
+                    card.innerHTML = `
+                        <div class="card h-100 ${cardClass}" onclick="selectVectorStore('${store.id}', ${store.is_available})">
+                            <div class="card-body">
+                                <h5 class="card-title">${store.name} ${badgeHtml}</h5>
+                                <p class="card-text">${store.description}</p>
+                                <p class="card-text">
+                                    ${metadataSupport}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    ${installButton}
+                                    <div class="form-check">
+                                        <input class="form-check-input vector-store-radio" type="radio" name="vector_store_radio" id="vectorStore${store.id}" value="${store.id}" ${disabledStatus}>
+                                        <label class="form-check-label" for="vectorStore${store.id}">
+                                            Select
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    vectorStoreContainer.appendChild(card);
+                });
+                
+                // Add event listeners to vector store cards
+                document.querySelectorAll('.card').forEach(card => {
+                    card.addEventListener('click', function(e) {
+                        // Don't trigger if clicking on a button
+                        if (e.target.tagName === 'BUTTON') {
+                            return;
+                        }
+                        
+                        const radio = this.querySelector('.vector-store-radio');
+                        if (radio && !radio.disabled) {
+                            radio.checked = true;
+                            document.getElementById('selectedVectorStore').value = radio.value;
+                            
+                            // Remove selection from all cards
+                            document.querySelectorAll('.card').forEach(c => {
+                                c.classList.remove('border-primary');
+                            });
+                            
+                            // Add selection to this card
+                            this.classList.add('border-primary');
+                        }
+                    });
+                });
+                
+                // Set stored value if available
+                const storedVectorStore = sessionStorage.getItem('selectedVectorStore');
+                if (storedVectorStore) {
+                    const radio = document.querySelector(`input[name="vector_store_radio"][value="${storedVectorStore}"]`);
+                    if (radio && !radio.disabled) {
+                        radio.checked = true;
+                        document.getElementById('selectedVectorStore').value = storedVectorStore;
+                        
+                        // Add selection to the card
+                        const card = radio.closest('.card');
+                        if (card) {
+                            card.classList.add('border-primary');
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading vector stores:', error);
+                vectorStoreContainer.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-danger">
+                            Error loading vector stores. Please try refreshing the page.
+                        </div>
+                    </div>
+                `;
+            });
+    }
+    
+    function selectEmbeddingModel(modelId, isAvailable) {
+        if (!isAvailable) {
+            return;
+        }
+        
+        document.getElementById('selectedEmbeddingModel').value = modelId;
+        document.getElementById('embeddingModelSelectionError').style.display = 'none';
+    }
+    
+    function selectVectorStore(storeId, isAvailable) {
+        if (!isAvailable) {
+            return;
+        }
+        
+        document.getElementById('selectedVectorStore').value = storeId;
+        document.getElementById('vectorStoreSelectionError').style.display = 'none';
+    }
+    
+    function showApiKeyModal(modelId, apiKeyEnv) {
+        const modal = new bootstrap.Modal(document.getElementById('apiKeyModal'));
+        
+        // Set the API key service name
+        let serviceName = 'API';
+        if (modelId === 'openai') {
+            serviceName = 'OpenAI';
+        } else if (modelId === 'cohere') {
+            serviceName = 'Cohere';
+        }
+        
+        document.getElementById('apiKeyService').textContent = serviceName;
+        document.getElementById('apiKeyEnvVar').textContent = `${apiKeyEnv}=your-api-key-here`;
+        
+        modal.show();
+    }
+    
+    function installDependencies(componentType, componentId) {
+        const modal = new bootstrap.Modal(document.getElementById('dependencyModal'));
+        modal.show();
+        
+        // Set component name
+        let componentName = '';
+        let endpoint = '';
+        
+        if (componentType === 'embedding') {
+            // Get embedding model info
+            fetch(`{{ url_for('vector_db.get_embedding_model_info') }}?model_id=${componentId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('componentName').textContent = data.name;
+                    
+                    const packageList = document.getElementById('packageList');
+                    packageList.innerHTML = '';
+                    data.required_packages.forEach(pkg => {
+                        const li = document.createElement('li');
+                        li.textContent = pkg;
+                        packageList.appendChild(li);
+                    });
+                    
+                    // Start installation
+                    document.getElementById('installProgress').style.width = '0%';
+                    document.getElementById('installStatus').textContent = 'Starting installation...';
+                    
+                    // Install dependencies
+                    fetch("{{ url_for('vector_db.install_embedding_model_dependencies') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ model_id: componentId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById('installProgress').style.width = '100%';
+                            document.getElementById('installStatus').textContent = 'Installation complete!';
+                            
+                            // Reload embedding models after a short delay
+                            setTimeout(() => {
+                                loadEmbeddingModels();
+                            }, 1000);
+                        } else {
+                            document.getElementById('installProgress').style.width = '100%';
+                            document.getElementById('installProgress').classList.remove('bg-primary');
+                            document.getElementById('installProgress').classList.add('bg-danger');
+                            document.getElementById('installStatus').textContent = `Installation failed: ${data.error}`;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error installing dependencies:', error);
+                        document.getElementById('installProgress').style.width = '100%';
+                        document.getElementById('installProgress').classList.remove('bg-primary');
+                        document.getElementById('installProgress').classList.add('bg-danger');
+                        document.getElementById('installStatus').textContent = 'Installation failed due to an error.';
+                    });
+                })
+                .catch(error => {
+                    console.error('Error getting embedding model info:', error);
+                    document.getElementById('installStatus').textContent = 'Error getting embedding model information.';
+                });
+        } else if (componentType === 'vector-store') {
+            // Get vector store info
+            fetch(`{{ url_for('vector_db.get_vector_store_info') }}?store_id=${componentId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('componentName').textContent = data.name;
+                    
+                    const packageList = document.getElementById('packageList');
+                    packageList.innerHTML = '';
+                    data.required_packages.forEach(pkg => {
+                        const li = document.createElement('li');
+                        li.textContent = pkg;
+                        packageList.appendChild(li);
+                    });
+                    
+                    // Start installation
+                    document.getElementById('installProgress').style.width = '0%';
+                    document.getElementById('installStatus').textContent = 'Starting installation...';
+                    
+                    // Install dependencies
+                    fetch("{{ url_for('vector_db.install_vector_store_dependencies') }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ store_id: componentId })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById('installProgress').style.width = '100%';
+                            document.getElementById('installStatus').textContent = 'Installation complete!';
+                            
+                            // Reload vector stores after a short delay
+                            setTimeout(() => {
+                                loadVectorStores();
+                            }, 1000);
+                        } else {
+                            document.getElementById('installProgress').style.width = '100%';
+                            document.getElementById('installProgress').classList.remove('bg-primary');
+                            document.getElementById('installProgress').classList.add('bg-danger');
+                            document.getElementById('installStatus').textContent = `Installation failed: ${data.error}`;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error installing dependencies:', error);
+                        document.getElementById('installProgress').style.width = '100%';
+                        document.getElementById('installProgress').classList.remove('bg-primary');
+                        document.getElementById('installProgress').classList.add('bg-danger');
+                        document.getElementById('installStatus').textContent = 'Installation failed due to an error.';
+                    });
+                })
+                .catch(error => {
+                    console.error('Error getting vector store info:', error);
+                    document.getElementById('installStatus').textContent = 'Error getting vector store information.';
+                });
+        }
+    }
+</script>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+    .card {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .card.border-primary {
+        border-width: 2px;
+    }
+    
+    .card.border-warning {
+        border-width: 2px;
+    }
+</style>
+{% endblock %}

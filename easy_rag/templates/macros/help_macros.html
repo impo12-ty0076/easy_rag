@@ -1,0 +1,35 @@
+{% macro help_tooltip(text) %}
+<i class="bi bi-question-circle text-primary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ text }}"></i>
+{% endmacro %}
+
+{% macro help_button(help_id, text="Help") %}
+<a href="#" class="help-button" data-help-id="{{ help_id }}">
+    <i class="bi bi-info-circle me-1"></i>{{ text }}
+</a>
+{% endmacro %}
+
+{% macro tour_button(tour_id, text="Take a Tour") %}
+<a href="#" class="tour-button btn btn-sm btn-outline-primary" data-tour-id="{{ tour_id }}">
+    <i class="bi bi-signpost-2 me-1"></i>{{ text }}
+</a>
+{% endmacro %}
+
+{% macro form_label(for_id, label_text, help_text=None) %}
+<label for="{{ for_id }}" class="form-label">
+    {{ label_text }}
+    {% if help_text %}
+    <i class="bi bi-question-circle text-primary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ help_text }}"></i>
+    {% endif %}
+</label>
+{% endmacro %}
+
+{% macro card_header(title, help_id=None) %}
+<div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">{{ title }}</h5>
+    {% if help_id %}
+    <a href="#" class="help-button" data-help-id="{{ help_id }}">
+        <i class="bi bi-info-circle"></i>
+    </a>
+    {% endif %}
+</div>
+{% endmacro %}
